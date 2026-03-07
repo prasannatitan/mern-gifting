@@ -1,0 +1,244 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  CEE
+  VENDOR
+  STORE_OWNER
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING_CEE_APPROVAL
+  REJECTED_BY_CEE
+  PENDING_VENDOR_ACCEPTANCE
+  REJECTED_BY_VENDOR
+  ESTIMATE_SENT
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING_VERIFICATION
+  VERIFIED
+  FAILED
+}
+
+enum ShipmentStatus {
+  NOT_REQUIRED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+  LOST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole
+
+  vendor       Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId     String?
+
+  store        Store?   @relation("UserStore", fields: [storeId], references: [id])
+  storeId      String?
+
+  productApprovals ProductApproval[] @relation("ProductApprovalUser")
+  orderApprovals   OrderApproval[]   @relation("OrderApprovalUser")
+
+  ownedStores Store[] @relation("StoreOwner")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Vendor {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  address   String?
+  isActive  Boolean   @default(true)
+
+  products  Product[]
+  orders    Order[]
+  users     User[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Store {
+  id        String    @id @default(cuid())
+  name      String
+  code      String    @unique
+  address   String?
+  email     String?
+  phone     String?
+
+  owner     User?     @relation("StoreOwner", fields: [ownerId], references: [id])
+  ownerId   String?
+
+  users     User[]    @relation("UserStore")
+
+  orders    Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String          @id @default(cuid())
+  vendor      Vendor          @relation(fields: [vendorId], references: [id])
+  vendorId    String
+
+  name        String
+  sku         String?
+  description String?
+  basePrice   Decimal         @db.Decimal(10, 2)
+  currency    String          @default("INR")
+  status      ProductStatus   @default(PENDING_APPROVAL)
+
+  approvals   ProductApproval[]
+
+  orderItems  OrderItem[] @relation("OrderItemProduct")
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ProductApproval {
+  id           String        @id @default(cuid())
+  product      Product       @relation(fields: [productId], references: [id])
+  productId    String
+
+  approvedBy   User?         @relation("ProductApprovalUser", fields: [approvedById], references: [id])
+  approvedById String?
+
+  status       ProductStatus
+  remarks      String?
+
+  createdAt    DateTime      @default(now())
+}
+
+model Order {
+  id                String        @id @default(cuid())
+  store             Store         @relation(fields: [storeId], references: [id])
+  storeId           String
+
+  vendor            Vendor        @relation(fields: [vendorId], references: [id])
+  vendorId          String
+
+  status            OrderStatus   @default(PENDING_CEE_APPROVAL)
+  paymentStatus     PaymentStatus @default(UNPAID)
+  totalAmount       Decimal       @db.Decimal(10, 2)
+  currency          String        @default("INR")
+
+  items             OrderItem[]
+  approvals         OrderApproval[]
+  estimate          Estimate?
+  shipment          Shipment?
+
+  placedAt          DateTime      @default(now())
+  paymentVerifiedAt DateTime?
+  deliveredAt       DateTime?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  order      Order    @relation(fields: [orderId], references: [id])
+  orderId    String
+
+  product    Product  @relation("OrderItemProduct", fields: [productId], references: [id])
+  productId  String
+
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal  @db.Decimal(10, 2)
+}
+
+model OrderApproval {
+  id           String      @id @default(cuid())
+  order        Order       @relation(fields: [orderId], references: [id])
+  orderId      String
+
+  approvedBy   User?       @relation("OrderApprovalUser", fields: [approvedById], references: [id])
+  approvedById String?
+
+  status       OrderStatus
+  remarks      String?
+
+  createdAt    DateTime    @default(now())
+}
+
+model Estimate {
+  id             String   @id @default(cuid())
+  order          Order    @relation(fields: [orderId], references: [id])
+  orderId        String   @unique
+
+  subtotal       Decimal  @db.Decimal(10, 2)
+  taxAmount      Decimal  @db.Decimal(10, 2)
+  shippingAmount Decimal  @db.Decimal(10, 2)
+  grandTotal     Decimal  @db.Decimal(10, 2)
+  notes          String?
+
+  sentToEmail    String
+  sentAt         DateTime @default(now())
+}
+
+model Shipment {
+  id             String         @id @default(cuid())
+  order          Order          @relation(fields: [orderId], references: [id])
+  orderId        String         @unique
+
+  courier        String?
+  trackingNumber String?
+  trackingUrl    String?
+  status         ShipmentStatus @default(IN_TRANSIT)
+  rawWebhookData Json?
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  template  String
+  payload   Json
+  status    String
+  error     String?
+
+  createdAt DateTime @default(now())
+}
