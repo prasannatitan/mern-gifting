@@ -60,6 +60,27 @@ bun run start
 
 The server runs on `http://localhost:3000`.
 
+### Deploying on Render
+
+**Option A: Docker (recommended — Bun is not a native Render runtime)**
+
+1. Create a **Web Service**, connect your repo, and set **Root Directory** to `backend`.
+2. **Environment**: choose **Docker**. Render will build and run using the repo’s `Dockerfile`; no Build or Start command needed in the dashboard.
+3. Set **Environment variables**: `DATABASE_URL`, `JWT_SECRET` (and optionally `CORS_ORIGIN`). `PORT` is set by Render; the app uses it automatically.
+
+**Option B: Native (if Bun were available)**
+
+1. **Build Command**: `bun install && bun run build`
+2. **Start Command**: `bunx prisma migrate deploy && bun run start`
+3. Same env vars as above.
+
+**Environment variables** (required for both):
+
+- `DATABASE_URL` – PostgreSQL connection string (e.g. from Render Postgres).
+- `JWT_SECRET` – strong random secret for JWT signing.
+- `PORT` – set automatically by Render.
+- `CORS_ORIGIN` (optional) – e.g. `https://your-frontend.onrender.com`.
+
 ### High-level API overview
 
 - **Auth**
