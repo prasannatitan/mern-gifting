@@ -1,6 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { badRequest, json, registerRoute } from "../../core/router";
-import { loginUser, registerUser } from "./service";
+import { loginUser, loginUserForStore, registerUser, registerUserForStore } from "./service";
 
 registerRoute("POST", "/auth/register", async ({ req }) => {
   try {
@@ -21,6 +21,37 @@ registerRoute("POST", "/auth/login", async ({ req }) => {
   } catch (err) {
     console.error(err);
     return badRequest("Invalid email or password");
+  }
+});
+
+// Store frontend only: only STORE_OWNER can log in
+registerRoute("POST", "/auth/login/store", async ({ req }) => {
+  try {
+    const body = await req.json();
+    const result = await loginUserForStore(body);
+    console.log(result)
+    return json(result);
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "NOT_ALLOWED_FOR_STORE") {
+      return json(
+        { error: "This site is for store owners only. Use the admin or vendor dashboard to sign in." },
+        { status: 403 }
+      );
+    }
+    console.error(err);
+    return badRequest("Invalid email or password");
+  }
+});
+
+// Store frontend only: register always creates STORE_OWNER
+registerRoute("POST", "/auth/register/store", async ({ req }) => {
+  try {
+    const body = await req.json();
+    const result = await registerUserForStore(body);
+    return json(result, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return badRequest("Invalid registration data or user already exists");
   }
 });
 

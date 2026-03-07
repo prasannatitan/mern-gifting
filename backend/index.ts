@@ -30,7 +30,9 @@ serve({
     }
 
     const url = new URL(req.url);
-    const handler = getRoute(req.method, url.pathname);
+    // Normalize path: collapse repeated slashes, strip trailing slash (so //auth/login/store and /auth/login/store/ both match)
+    const pathname = (url.pathname.replace(/\/+/g, "/").replace(/\/$/, "") || "/");
+    const handler = getRoute(req.method, pathname);
 
     const token = extractToken(req);
     const user = token ? verifyToken(token) : null;
@@ -47,5 +49,5 @@ serve({
 
     return withCors(notFound());
   },
-  port: Number(process.env.PORT ?? 3000),
+  port: Number(process.env.PORT ?? 4000),
 });

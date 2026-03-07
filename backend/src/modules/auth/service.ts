@@ -89,3 +89,27 @@ export async function loginUser(input: unknown) {
   };
 }
 
+/** Login for store frontend only — rejects non–STORE_OWNER. */
+export async function loginUserForStore(input: unknown) {
+  const result = await loginUser(input);
+  if (result.user.role !== UserRole.STORE_OWNER) {
+    throw new Error("NOT_ALLOWED_FOR_STORE");
+  }
+  return result;
+}
+
+const registerStoreSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().min(1),
+});
+
+/** Register for store frontend only — always creates STORE_OWNER. */
+export async function registerUserForStore(input: unknown) {
+  const data = registerStoreSchema.parse(input);
+  return registerUser({
+    ...data,
+    role: UserRole.STORE_OWNER,
+  });
+}
+

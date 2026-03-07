@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext.tsx";
-import type { LoginResponse } from "@/lib/api.ts";
+import { API_BASE, type LoginResponse } from "@/lib/api.ts";
 import type { User } from "@/contexts/AuthContext.tsx";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function Login() {
   const { login } = useAuth();
@@ -21,17 +19,19 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login/store`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) throw new Error("Invalid credentials");
-      const data = (await res.json()) as LoginResponse;
+      const data = (await res.json()) as LoginResponse & { error?: string };
+      if (!res.ok) {
+        throw new Error(res.status === 403 ? (data.error ?? "Not authorized for this site") : "Invalid credentials");
+      }
       login(data.token, data.user as User);
       navigate(from || "/", { replace: true });
-    } catch {
-      setError("Invalid email or password");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Invalid email or password");
     } finally {
       setLoading(false);
     }
