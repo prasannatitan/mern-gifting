@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.tsx";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { NavLink} from 'react-router';
@@ -13,14 +12,11 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenCart }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { totalItems } = useCart();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
+
+
 
   return (
     <>

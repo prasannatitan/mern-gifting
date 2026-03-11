@@ -7,6 +7,7 @@ import Section1 from '../components/home/section-1'
 import Section2 from '../components/home/section-2'
 import Section3 from '../components/home/section-3'
 import Section4 from '../components/home/section-4'
+//@ts-ignore
 import 'swiper/css';
 
 type HeroSlide = {

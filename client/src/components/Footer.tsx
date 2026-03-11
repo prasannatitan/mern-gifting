@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import mail from '/icon/mail.svg';
 import logo from '/assets/tanishq-gifting.png';
 
