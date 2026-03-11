@@ -125,6 +125,7 @@ model Product {
   basePrice   Decimal         @db.Decimal(10, 2)
   currency    String          @default("INR")
   status      ProductStatus   @default(PENDING_APPROVAL)
+  images      String[]        @default([]) // paths under /uploads/products/<id>/
 
   approvals   ProductApproval[]
 

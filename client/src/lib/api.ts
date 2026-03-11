@@ -45,6 +45,7 @@ export interface ApiProduct {
   basePrice: number;
   currency: string;
   status: string;
+  images?: string[];
   vendor?: { id: string; name: string };
   createdAt: string;
 }

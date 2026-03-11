@@ -1,4 +1,5 @@
 import { serve } from "bun";
+import path from "path";
 import { getRoute, json, notFound } from "./src/core/router";
 import { extractToken, verifyToken } from "./src/core/auth";
 
@@ -17,6 +18,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+
 function withCors(res: Response): Response {
   const r = new Response(res.body, res);
   Object.entries(CORS_HEADERS).forEach(([k, v]) => r.headers.set(k, v));
@@ -30,10 +33,26 @@ serve({
     }
 
     const url = new URL(req.url);
-    // Normalize path: collapse repeated slashes, strip trailing slash (so //auth/login/store and /auth/login/store/ both match)
     const pathname = (url.pathname.replace(/\/+/g, "/").replace(/\/$/, "") || "/");
-    const handler = getRoute(req.method, pathname);
 
+    if (req.method === "GET" && pathname.startsWith("/uploads/") && !pathname.includes("..")) {
+      const filePath = path.join(UPLOADS_DIR, pathname.slice("/uploads/".length).split("/").join(path.sep));
+      if (path.resolve(filePath).startsWith(path.resolve(UPLOADS_DIR))) {
+        try {
+          const file = Bun.file(filePath);
+          if (await file.exists()) {
+            const ext = path.extname(filePath).toLowerCase();
+            const mime =
+              ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : ext === ".gif" ? "image/gif" : "application/octet-stream";
+            return withCors(new Response(file, { headers: { "Content-Type": mime } }));
+          }
+        } catch {
+          // fall through to notFound
+        }
+      }
+    }
+
+    const handler = getRoute(req.method, pathname);
     const token = extractToken(req);
     const user = token ? verifyToken(token) : null;
 

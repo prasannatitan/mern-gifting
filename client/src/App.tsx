@@ -5,13 +5,13 @@ import { CartProvider } from "@/contexts/CartContext.tsx";
 import { Header } from "@/components/Header.tsx";
 import { CartSidebar } from "@/components/CartSidebar.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute.tsx";
-import { Home } from "@/pages/Home.tsx";
+import Home from "@/pages/Home.tsx";
 import { Categories } from "@/pages/Categories.tsx";
 import { Product } from "@/pages/Product.tsx";
 import { Login } from "@/pages/Login.tsx";
 import { Checkout } from "@/pages/Checkout.tsx";
 import { OrderSuccess } from "@/pages/OrderSuccess.tsx";
-
+import Footer from "@/components/Footer.tsx";
 function AppLayout() {
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -21,7 +21,7 @@ function AppLayout() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/categories" element={<Categories />} />
+          <Route path="/collections" element={<Categories />} />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/login" element={<Login />} />
           <Route
@@ -36,6 +36,7 @@ function AppLayout() {
         </Routes>
       </main>
       <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
+        <Footer />
     </>
   );
 }

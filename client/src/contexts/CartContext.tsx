@@ -13,6 +13,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   vendorId: string;
+  imageUrl?: string; // first product image path, e.g. /uploads/products/...
 }
 
 interface CartContextValue {
@@ -48,6 +49,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: Number(product.basePrice),
             quantity,
             vendorId,
+            imageUrl: product.images?.[0],
           },
         ];
       });

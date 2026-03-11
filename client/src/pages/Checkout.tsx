@@ -93,26 +93,7 @@ export function Checkout() {
         <form onSubmit={handlePlaceOrder} className="mt-6 grid gap-8 lg:grid-cols-2">
           <div className="space-y-4">
             <h2 className="font-semibold text-gray-900">Contact & delivery</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <input
-                type="text"
-                value={form.contactName}
-                onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                value={form.contactEmail}
-                onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </div>
+           
             <div>
               <label className="block text-sm font-medium text-gray-700">Phone</label>
               <input

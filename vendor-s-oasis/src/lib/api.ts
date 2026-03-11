@@ -3,7 +3,7 @@
  * Uses token from localStorage (set by AuthContext) for authenticated requests.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+export const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 export function getStoredToken(): string | null {
   try {
@@ -31,7 +31,10 @@ export async function apiRequest<T = unknown>(
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers,
+    headers:
+      options.body instanceof FormData
+        ? { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers as Record<string, string>) }
+        : headers,
   });
 
   if (!res.ok) {
@@ -58,6 +61,7 @@ export interface ApiProduct {
   currency: string;
   status: string;
   sku: string | null;
+  images: string[];
   createdAt: string;
   vendor?: { name: string };
 }

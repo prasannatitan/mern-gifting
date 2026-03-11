@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { apiRequest, type ApiProduct } from "@/lib/api";
+import { API_BASE, apiRequest, type ApiProduct } from "@/lib/api";
 
 type UiStatus = "pending_v1" | "pending_v2" | "approved" | "rejected" | "live";
 
@@ -71,6 +71,7 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", category: "", price: "", description: "" });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("All");
 
@@ -95,15 +96,27 @@ const ProductsPage = () => {
     if (!form.name || !form.price) return;
     setError(null);
     try {
-      await apiRequest("/vendors/products", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name,
-          description: form.description || null,
-          basePrice: Number(form.price),
-        }),
-      });
+      if (imageFiles.length > 0) {
+        const fd = new FormData();
+        fd.set("name", form.name);
+        fd.set("description", form.description || "");
+        fd.set("basePrice", String(form.price));
+        fd.set("currency", "INR");
+        if (form.category) fd.set("sku", form.category);
+        imageFiles.forEach((file) => fd.append("images", file));
+        await apiRequest("/vendors/products", { method: "POST", body: fd });
+      } else {
+        await apiRequest("/vendors/products", {
+          method: "POST",
+          body: JSON.stringify({
+            name: form.name,
+            description: form.description || null,
+            basePrice: Number(form.price),
+          }),
+        });
+      }
       setForm({ name: "", category: "", price: "", description: "" });
+      setImageFiles([]);
       setOpen(false);
       await load();
     } catch (e) {
@@ -149,9 +162,19 @@ const ProductsPage = () => {
               <DialogTitle>Upload New Product</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
+              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
                 <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">Product image (optional)</p>
+                <p className="text-sm text-muted-foreground mb-2">Product images (optional, multiple)</p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="text-sm text-muted-foreground file:mr-2 file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-accent-foreground"
+                  onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
+                />
+                {imageFiles.length > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">{imageFiles.length} file(s) selected</p>
+                )}
               </div>
               <Input
                 placeholder="Product name"
@@ -221,7 +244,15 @@ const ProductsPage = () => {
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">📦</span>
+                        {product.images?.length > 0 ? (
+                          <img
+                            src={`${API_BASE}${product.images[0]}`}
+                            alt=""
+                            className="h-10 w-10 rounded object-cover"
+                          />
+                        ) : (
+                          <span className="text-xl">📦</span>
+                        )}
                         <span className="text-sm font-medium text-foreground">{product.name}</span>
                       </div>
                     </td>

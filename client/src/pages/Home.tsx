@@ -1,90 +1,113 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { apiRequest, type ApiProduct } from "@/lib/api.ts";
-import { useCart } from "@/contexts/CartContext.tsx";
+// app/components/HeroSwiper.tsx
+'use client';
 
-export function Home() {
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { addToCart } = useCart();
+import {Swiper, SwiperSlide} from 'swiper/react';
+import {Autoplay} from 'swiper/modules';
+import Section1 from '../components/home/section-1'
+import Section2 from '../components/home/section-2'
+import Section3 from '../components/home/section-3'
+import Section4 from '../components/home/section-4'
+import 'swiper/css';
 
-  useEffect(() => {
-    apiRequest<ApiProduct[]>("/products")
-      .then(setProducts)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
-      .finally(() => setLoading(false));
-  }, []);
+type HeroSlide = {
+  id: string;
+  image: string;
+  alt?: string;
+};
 
+const slides: HeroSlide[] = [
+  {
+    id: '1',
+    image: '/assets/slide-1.webp',
+    alt: 'Hero banner',
+  },
+  {
+    id: '2',
+    image: '/assets/slide-2.webp',
+    alt: 'Hero banner',
+  },
+  {
+    id: '3',
+    image: '/assets/slide-3.webp',
+    alt: 'Hero banner',
+  },
+];
+
+export default function Home() {
   return (
-    <div className="min-h-screen">
-      <section className="bg-primary/5 border-b border-primary/10 py-12">
-        <div className="mx-auto max-w-6xl px-4 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            Tanishq Bulk Orders
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Order for your franchise store. Login to place orders.
-          </p>
-        </div>
-      </section>
+    <section className="w-full">
+      <Swiper
+         modules={[Autoplay]}
+  slidesPerView={1}
+  autoplay={{
+    delay: 4000,              // ⏱ time banner stays (4s)
+    disableOnInteraction: false,
+  }}
+        speed={800}   
+        loop={true}
+      
+        allowTouchMove={true}
+        className="w-full h-full"
+      >
+        {slides.map((slide) => (
+          <SwiperSlide key={slide.id}>
+            <img
+              src={slide.image}
+              alt={slide.alt}
+              className="w-full "
+              loading="eager"
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        {error && (
-          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-64 animate-pulse rounded-xl bg-gray-200"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((p) => (
-              <div
-                key={p.id}
-                className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
-              >
-                <Link to={`/product/${p.id}`} className="block flex-1 p-4">
-                  <div className="aspect-square rounded-lg bg-gray-100 flex items-center justify-center text-4xl text-gray-400">
-                    💎
-                  </div>
-                  <h2 className="mt-2 line-clamp-2 text-sm font-medium text-gray-900">
-                    {p.name}
-                  </h2>
-                  <p className="mt-1 text-sm font-semibold text-primary">
-                    ₹{Number(p.basePrice).toFixed(2)}
-                  </p>
-                  {p.vendor?.name && (
-                    <p className="text-xs text-gray-500">{p.vendor.name}</p>
-                  )}
-                </Link>
-                <div className="border-t border-gray-100 p-3">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart(p);
-                    }}
-                    className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-white hover:bg-primary/90"
-                  >
-                    Add to cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {!loading && products.length === 0 && !error && (
-          <p className="py-12 text-center text-gray-500">No products yet.</p>
-        )}
-      </section>
+      <TextMarquee/>
+      <Section1/>
+      <Section2/>
+      <Section3/>
+      <Section4/>
+    </section>
+  );
+}
+
+
+
+const marqueeTexts = [
+  "FREE SHIPPING ON ORDERS ABOVE ₹999",
+  "NEW YEAR SALE UP TO 50% OFF",
+  "EXTRA 10% OFF ON PREPAID ORDERS",
+   "FREE SHIPPING ON ORDERS ABOVE ₹999",
+  "NEW YEAR SALE UP TO 50% OFF",
+  "EXTRA 10% OFF ON PREPAID ORDERS",
+];
+
+export  function TextMarquee() {
+  return (
+    <div className="w-full overflow-hidden bg-[#D18E3D] text-white md:py-2 py-1">
+      <Swiper
+        modules={[Autoplay]}
+        loop={true}
+        slidesPerView="auto"
+        spaceBetween={80}
+        speed={8000}              
+        autoplay={{
+          delay: 0,
+          disableOnInteraction: false,
+        }}
+        allowTouchMove={false}
+      >
+        {[...marqueeTexts, ...marqueeTexts].map((text, index) => (
+          <SwiperSlide
+            key={index}
+            style={{ width: "auto" }}
+            className="flex items-center"
+          >
+            <span className="whitespace-nowrap text-sm font-[300] tracking-wide inter">
+              {text}
+            </span>
+          </SwiperSlide>
+        ))}
+      </Swiper>
     </div>
   );
 }

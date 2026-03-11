@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { apiRequest, type ApiProduct } from "@/lib/api.ts";
+import { API_BASE, apiRequest, type ApiProduct } from "@/lib/api.ts";
 import { useCart } from "@/contexts/CartContext.tsx";
 
 export function Product() {
@@ -40,12 +40,20 @@ export function Product() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <Link to="/" className="text-sm text-gray-500 hover:text-primary">
-          ← Back to products
+        <Link to="/collections" className="text-sm text-gray-700 [font-family:var(--primary-font)]">
+          &larr; Back To Collections
         </Link>
         <div className="mt-6 grid gap-8 md:grid-cols-2">
-          <div className="aspect-square rounded-xl bg-gray-100 flex items-center justify-center text-8xl text-gray-400">
-            💎
+          <div className="aspect-square rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
+            {product.images?.length ? (
+              <img
+                src={`${API_BASE}${product.images[0]}`}
+                alt={product.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-8xl text-gray-400">💎</span>
+            )}
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>

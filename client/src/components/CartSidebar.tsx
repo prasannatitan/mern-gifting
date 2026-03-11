@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { useAuth } from "@/contexts/AuthContext.tsx";
+import { API_BASE } from "@/lib/api.ts";
 
 interface CartSidebarProps {
   open: boolean;
@@ -30,7 +31,7 @@ export function CartSidebar({ open, onClose }: CartSidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            className="cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
             aria-label="Close cart"
           >
             <X className="h-5 w-5" />
@@ -47,7 +48,8 @@ export function CartSidebar({ open, onClose }: CartSidebarProps) {
                 onClick={onClose}
                 className="text-sm font-medium text-primary hover:underline"
               >
-                Continue shopping
+                <a href="/collections">Continue shopping</a>
+                
               </button>
             </div>
           ) : (
@@ -57,6 +59,17 @@ export function CartSidebar({ open, onClose }: CartSidebarProps) {
                   key={item.productId}
                   className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-3"
                 >
+                  {item.imageUrl ? (
+                    <img
+                      src={`${API_BASE}${item.imageUrl}`}
+                      alt=""
+                      className="h-12 w-12 rounded object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded bg-gray-200 shrink-0 flex items-center justify-center text-lg">
+                      💎
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-sm font-medium text-gray-900">
                       {item.name}
