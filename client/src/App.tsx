@@ -8,7 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute.tsx";
 import Home from "@/pages/Home.tsx";
 import { Categories } from "@/pages/Categories.tsx";
 import { Product } from "@/pages/Product.tsx";
-import { Profile } from "@/pages/Profile.tsx";
+import { Profile } from "@/pages/profile.tsx";
 import { Login } from "@/pages/Login.tsx";
 import { Checkout } from "@/pages/Checkout.tsx";
 import { OrderSuccess } from "@/pages/OrderSuccess.tsx";
