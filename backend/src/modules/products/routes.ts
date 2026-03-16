@@ -80,6 +80,9 @@ registerRoute(
     if (!vendor) {
       return badRequest("Vendor not found for user");
     }
+    if (!vendor.isActive) {
+      return badRequest("Vendor account is paused. Contact admin.");
+    }
 
     const product = await prisma.product.create({
       data: {

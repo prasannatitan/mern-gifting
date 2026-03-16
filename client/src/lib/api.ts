@@ -58,3 +58,31 @@ export interface ApiStore {
   email: string | null;
   phone: string | null;
 }
+
+export interface ApiOrderItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface ApiOrder {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  totalAmount: number;
+  currency: string;
+  placedAt: string;
+  paymentVerifiedAt: string | null;
+  vendor?: { id: string; name: string };
+  shipment?: {
+    id: string;
+    courier: string | null;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+    status: string;
+  } | null;
+  estimate?: { id: string; grandTotal: number } | null;
+  items?: ApiOrderItem[];
+}

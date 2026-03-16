@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Store,
+  Building2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useState } from "react";
@@ -19,6 +21,8 @@ const navItems = [
   { title: "Cost Letters", url: "/admin/cost-letters", icon: FileText },
   { title: "Deliveries", url: "/admin/deliveries", icon: Truck },
   { title: "Payments", url: "/admin/payments", icon: CreditCard },
+  { title: "Vendors", url: "/admin/vendors", icon: Store },
+  { title: "Stores", url: "/admin/stores", icon: Building2 },
 ];
 
 export const AdminSidebar = () => {

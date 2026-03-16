@@ -38,6 +38,14 @@ registerRoute(
       return badRequest("storeId, vendorId and at least one item are required");
     }
 
+    const store = await prisma.store.findUnique({
+      where: { id: body.storeId },
+    });
+    if (!store) return badRequest("Store not found");
+    if (!store.isActive) {
+      return badRequest("Store account is paused. Contact admin.");
+    }
+
     const totalAmount = body.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
       0,

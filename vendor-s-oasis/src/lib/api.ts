@@ -109,3 +109,27 @@ export interface ApiEstimateCreate {
   notes?: string;
   sentToEmail: string;
 }
+
+export interface ApiVendor {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  isActive: boolean;
+  createdAt: string;
+  _count?: { products: number; orders: number };
+}
+
+export interface ApiStoreAdmin {
+  id: string;
+  name: string;
+  code: string;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  isActive: boolean;
+  createdAt: string;
+  owner?: { id: string; name: string; email: string } | null;
+  _count?: { orders: number };
+}

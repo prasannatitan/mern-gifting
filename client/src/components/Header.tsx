@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import React from "react";
 import { useAuth } from "@/contexts/AuthContext.tsx";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { NavLink} from 'react-router';
@@ -16,8 +17,28 @@ export function Header({ onOpenCart }: HeaderProps) {
   const { totalItems } = useCart();
 
 
-
-
+const menu = [
+  {
+    label: 'NEW YEAR GIFTS',
+    href: '/',
+  },
+  {
+    label: 'AKSHAYA TRITYA GIFTS',
+    href: '/',
+  },
+  {
+    label: 'ALL GIFTS',
+    href: '/collections',
+  },
+  {
+    label: 'MAKE YOUR OWN HAMPER',
+    href: '/',
+  },
+  {
+    label: 'NEW ARRIVALS',
+    href: '/',
+  },
+]
   return (
     <>
     <header className="p-3 pb-2 top-0 sticky z-[2] bg-[#F3E5D8]">
@@ -51,12 +72,13 @@ export function Header({ onOpenCart }: HeaderProps) {
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 p-2 rounded-lg  hover:bg-gray-100">
               
              
               <span className="hidden text-sm text-gray-600 sm:inline">
+                <Link to="/profile">
                 <img src={UserIcon} alt="USER ICON" className="h-5 " />
-               
+                </Link>
               </span>
             </div>
           ) : (
@@ -69,14 +91,18 @@ export function Header({ onOpenCart }: HeaderProps) {
           )}
         </div>
    </div>
-   {/* <div className='pt-3 flex justify-center'>
-     <HeaderMenu
-        menu={menu}
-        viewport="desktop"
-        primaryDomainUrl={header.shop.primaryDomain.url}
-        publicStoreDomain={publicStoreDomain}
-      />
-   </div> */}
+   <div className='pt-3 flex justify-center header-menu-desktop'>
+     {menu.map((itm, key)=>{
+      return (
+        <React.Fragment key={key}>
+        <Link className="cursor-pointer [font-family:var(--secondary-font)] text-[16px] font-[400]" to={itm.href} key={key}>
+          {itm.label}
+        </Link>
+        <hr className="bg-black h-[-webkit-fill-available] w-[1px]" />
+        </React.Fragment>
+      )
+     })}
+   </div>
     </header>
 
 

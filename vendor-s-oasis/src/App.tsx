@@ -19,6 +19,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCostLetters from "./pages/admin/AdminCostLetters";
 import AdminDeliveries from "./pages/admin/AdminDeliveries";
 import AdminPayments from "./pages/admin/AdminPayments";
+import AdminVendors from "./pages/admin/AdminVendors";
+import AdminStores from "./pages/admin/AdminStores";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +140,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
                   <AdminPayments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/vendors"
+              element={
+                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                  <AdminVendors />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/stores"
+              element={
+                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                  <AdminStores />
                 </ProtectedRoute>
               }
             />

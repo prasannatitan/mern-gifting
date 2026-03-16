@@ -8,6 +8,7 @@ import "./src/modules/auth/routes";
 import "./src/modules/products/routes";
 import "./src/modules/orders/routes";
 import "./src/modules/shipments/routes";
+import "./src/modules/admin/routes";
 
 // Basic health check (stays here as top-level)
 import "./src/health";
