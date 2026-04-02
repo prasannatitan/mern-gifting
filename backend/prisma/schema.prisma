@@ -124,6 +124,10 @@ model Product {
   sku         String?
   description String?
   basePrice   Decimal         @db.Decimal(10, 2)
+  discountPrice Decimal?      @db.Decimal(10, 2)
+  stockQuantity Int           @default(0)
+  minOrderQuantity Int        @default(1)
+  maxOrderQuantity Int?
   currency    String          @default("INR")
   status      ProductStatus   @default(PENDING_APPROVAL)
   images      String[]        @default([]) // paths under /uploads/products/<id>/

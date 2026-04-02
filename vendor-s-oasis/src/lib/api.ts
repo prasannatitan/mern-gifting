@@ -5,6 +5,13 @@
 
 export const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
+/** Product image URL: full R2/CDN URL or legacy `/uploads/...` path. */
+export function publicImageUrl(pathOrUrl: string | undefined | null): string | undefined {
+  if (!pathOrUrl) return undefined;
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) return pathOrUrl;
+  return `${API_BASE}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+}
+
 export function getStoredToken(): string | null {
   try {
     const raw = localStorage.getItem("tanishq-auth");
@@ -58,6 +65,10 @@ export interface ApiProduct {
   name: string;
   description: string | null;
   basePrice: number;
+  discountPrice?: number | null;
+  stockQuantity: number;
+  minOrderQuantity: number;
+  maxOrderQuantity?: number | null;
   currency: string;
   status: string;
   sku: string | null;

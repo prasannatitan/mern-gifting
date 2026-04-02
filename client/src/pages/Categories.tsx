@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { API_BASE, apiRequest, type ApiProduct } from "@/lib/api.ts";
+import { apiRequest, publicImageUrl, type ApiProduct } from "@/lib/api.ts";
 import { useCart } from "@/contexts/CartContext.tsx";
 
 const CATEGORIES = ["All", "Rings", "Necklaces", "Earrings", "Bangles", "Other"];
@@ -75,7 +75,7 @@ export function Categories() {
                 <Link to={`/product/${p.id}`} className="block flex-1 p-4">
                   <div className="aspect-square rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                     {p.images?.length ? (
-                      <img src={`${API_BASE}${p.images[0]}`} alt="" className="h-full w-full object-cover" />
+                      <img src={publicImageUrl(p.images[0])} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <span className="text-4xl text-gray-400">💎</span>
                     )}

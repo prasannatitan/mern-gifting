@@ -35,6 +35,19 @@ DATABASE_URL="postgresql://user:password@localhost:5432/tanishq_mvp"
 JWT_SECRET="a-strong-random-secret"
 ```
 
+**Product images (Cloudflare R2)** — required when vendors upload images:
+
+```bash
+R2_ACCOUNT_ID="your_cloudflare_account_id"
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="your-bucket-name"
+# Public URL where objects are readable (R2 public bucket URL or custom domain), no trailing slash
+R2_PUBLIC_URL="https://pub-xxxxx.r2.dev"
+```
+
+Create an R2 bucket, API token with **Object Read & Write**, and enable **public access** (or use a custom domain) so `R2_PUBLIC_URL` matches how browsers load images.
+
 ### Database
 
 Run Prisma migrations and generate the client:

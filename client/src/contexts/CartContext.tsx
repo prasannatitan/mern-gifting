@@ -13,7 +13,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   vendorId: string;
-  imageUrl?: string; // first product image path, e.g. /uploads/products/...
+  imageUrl?: string; // first product image (R2 URL or /uploads/...)
 }
 
 interface CartContextValue {

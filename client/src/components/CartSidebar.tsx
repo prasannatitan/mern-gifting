@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { useAuth } from "@/contexts/AuthContext.tsx";
-import { API_BASE } from "@/lib/api.ts";
+import { publicImageUrl } from "@/lib/api.ts";
 
 interface CartSidebarProps {
   open: boolean;
@@ -61,7 +61,7 @@ export function CartSidebar({ open, onClose }: CartSidebarProps) {
                 >
                   {item.imageUrl ? (
                     <img
-                      src={`${API_BASE}${item.imageUrl}`}
+                      src={publicImageUrl(item.imageUrl)}
                       alt=""
                       className="h-12 w-12 rounded object-cover shrink-0"
                     />

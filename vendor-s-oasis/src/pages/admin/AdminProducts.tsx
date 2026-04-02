@@ -4,7 +4,7 @@ import { VerificationSteps } from "@/components/dashboard/VerificationSteps";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { API_BASE, apiRequest, type ApiProduct } from "@/lib/api";
+import { apiRequest, publicImageUrl, type ApiProduct } from "@/lib/api";
 
 interface AdminProduct extends ApiProduct {
   vendor?: { name: string };
@@ -159,7 +159,7 @@ const AdminProductsPage = () => {
                     <div className="flex items-center gap-3">
                       {product.images?.length > 0 ? (
                         <img
-                          src={`${API_BASE}${product.images[0]}`}
+                          src={publicImageUrl(product.images[0])}
                           alt=""
                           className="h-10 w-10 rounded object-cover"
                         />

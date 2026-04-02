@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
+import NewProduct from "./pages/NewProduct";
+import EditProduct from "./pages/EditProduct";
 import Orders from "./pages/Orders";
 import CostLetters from "./pages/CostLetters";
 import Deliveries from "./pages/Deliveries";
@@ -58,6 +60,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["VENDOR"]}>
                   <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/new"
+              element={
+                <ProtectedRoute allowedRoles={["VENDOR"]}>
+                  <NewProduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/:id/edit"
+              element={
+                <ProtectedRoute allowedRoles={["VENDOR"]}>
+                  <EditProduct />
                 </ProtectedRoute>
               }
             />

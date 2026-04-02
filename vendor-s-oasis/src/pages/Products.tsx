@@ -1,19 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { VerificationSteps } from "@/components/dashboard/VerificationSteps";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
-import { Plus, Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { API_BASE, apiRequest, type ApiProduct } from "@/lib/api";
+import { apiRequest, publicImageUrl, type ApiProduct } from "@/lib/api";
 
 type UiStatus = "pending_v1" | "pending_v2" | "approved" | "rejected" | "live";
 
@@ -69,9 +61,6 @@ const getStatusBadge = (status: UiStatus) => {
 const ProductsPage = () => {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", category: "", price: "", description: "" });
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("All");
 
@@ -91,38 +80,6 @@ const ProductsPage = () => {
   useEffect(() => {
     load();
   }, []);
-
-  const handleUpload = async () => {
-    if (!form.name || !form.price) return;
-    setError(null);
-    try {
-      if (imageFiles.length > 0) {
-        const fd = new FormData();
-        fd.set("name", form.name);
-        fd.set("description", form.description || "");
-        fd.set("basePrice", String(form.price));
-        fd.set("currency", "INR");
-        if (form.category) fd.set("sku", form.category);
-        imageFiles.forEach((file) => fd.append("images", file));
-        await apiRequest("/vendors/products", { method: "POST", body: fd });
-      } else {
-        await apiRequest("/vendors/products", {
-          method: "POST",
-          body: JSON.stringify({
-            name: form.name,
-            description: form.description || null,
-            basePrice: Number(form.price),
-          }),
-        });
-      }
-      setForm({ name: "", category: "", price: "", description: "" });
-      setImageFiles([]);
-      setOpen(false);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create product");
-    }
-  };
 
   const filtered =
     filter === "All"
@@ -151,63 +108,11 @@ const ProductsPage = () => {
             </button>
           ))}
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#832729] text-accent-foreground hover:bg-accent/90 gap-2">
-              <Plus className="w-4 h-4" /> Upload Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upload New Product</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
-                <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">Product images (optional, multiple)</p>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  multiple
-                  className="text-sm text-muted-foreground file:mr-2 file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-accent-foreground"
-                  onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
-                />
-                {imageFiles.length > 0 && (
-                  <p className="mt-2 text-xs text-muted-foreground">{imageFiles.length} file(s) selected</p>
-                )}
-              </div>
-              <Input
-                placeholder="Product name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-              <Input
-                placeholder="Category (optional)"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              />
-              <Textarea
-                placeholder="Description (optional)"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-              <Input
-                placeholder="Price (₹)"
-                type="number"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button
-                onClick={handleUpload}
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-                Submit for Verification
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Link to="/products/new">
+          <Button className="bg-[#832729] text-accent-foreground hover:bg-accent/90 gap-2">
+            <Plus className="w-4 h-4" /> Add New Product
+          </Button>
+        </Link>
       </div>
 
       <div className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
@@ -219,18 +124,19 @@ const ProductsPage = () => {
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Price</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Status</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Verification</th>
+              <th className="text-right text-xs font-medium text-muted-foreground px-5 py-3">Edit</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">
                   Loading…
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">
                   No products
                 </td>
               </tr>
@@ -246,23 +152,36 @@ const ProductsPage = () => {
                       <div className="flex items-center gap-3">
                         {product.images?.length > 0 ? (
                           <img
-                            src={`${API_BASE}${product.images[0]}`}
+                            src={publicImageUrl(product.images[0])}
                             alt=""
                             className="h-10 w-10 rounded object-cover"
                           />
                         ) : (
                           <span className="text-xl">📦</span>
                         )}
-                        <span className="text-sm font-medium text-foreground">{product.name}</span>
+                        <Link
+                          to={`/products/${product.id}/edit`}
+                          className="text-sm font-medium text-foreground hover:text-primary hover:underline"
+                        >
+                          {product.name}
+                        </Link>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">—</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{product.sku ?? "—"}</td>
                     <td className="px-5 py-4 text-sm font-mono font-medium text-foreground">
                       ₹{Number(product.basePrice).toFixed(2)}
                     </td>
                     <td className="px-5 py-4">{getStatusBadge(uiStatus)}</td>
                     <td className="px-5 py-4">
                       <VerificationSteps steps={getSteps(uiStatus)} size="sm" />
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        to={`/products/${product.id}/edit`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        Edit
+                      </Link>
                     </td>
                   </tr>
                 );
