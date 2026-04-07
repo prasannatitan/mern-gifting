@@ -2,6 +2,7 @@
 
 This is the backend for the multivendor bulk-order e‑commerce MVP for Tanishq franchises, built with **Bun**, **Prisma**, and **PostgreSQL**.
 
+
 ### Tech stack
 
 - **Runtime**: Bun
