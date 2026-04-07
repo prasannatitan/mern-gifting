@@ -23,15 +23,23 @@ import AdminDeliveries from "./pages/admin/AdminDeliveries";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminVendors from "./pages/admin/AdminVendors";
 import AdminStores from "./pages/admin/AdminStores";
+import CeeOverview from "./pages/cee/CeeOverview";
+import CeeOrders from "./pages/cee/CeeOrders";
+import CeeStores from "./pages/cee/CeeStores";
 
 const queryClient = new QueryClient();
+
+const CORPORATE_ROLES = ["CORPORATE_ADMIN"] as const;
 
 function LoginOrRedirect() {
   const { user } = useAuth();
   if (user) {
     if (user.role === "VENDOR") return <Navigate to="/" replace />;
-    if (user.role === "CEE" || user.role === "SUPER_ADMIN") return <Navigate to="/admin" replace />;
-    return <Navigate to="/" replace />;
+    if (user.role === "CEE") return <Navigate to="/cee" replace />;
+    if (user.role === "CORPORATE_ADMIN") {
+      return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to="/login" replace />;
   }
   return <Login />;
 }
@@ -46,7 +54,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginOrRedirect />} />
 
-            {/* Vendor Dashboard — VENDOR only */}
+            {/* Vendor */}
             <Route
               path="/"
               element={
@@ -112,11 +120,37 @@ const App = () => (
               }
             />
 
-            {/* Admin Dashboard — CEE & SUPER_ADMIN */}
+            {/* CEE — territory orders & stores */}
+            <Route
+              path="/cee"
+              element={
+                <ProtectedRoute allowedRoles={["CEE"]}>
+                  <CeeOverview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cee/orders"
+              element={
+                <ProtectedRoute allowedRoles={["CEE"]}>
+                  <CeeOrders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cee/stores"
+              element={
+                <ProtectedRoute allowedRoles={["CEE"]}>
+                  <CeeStores />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Corporate admin — catalog + platform */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminOverview />
                 </ProtectedRoute>
               }
@@ -124,7 +158,7 @@ const App = () => (
             <Route
               path="/admin/products"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminProducts />
                 </ProtectedRoute>
               }
@@ -132,7 +166,7 @@ const App = () => (
             <Route
               path="/admin/orders"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={["CORPORATE_ADMIN"]}>
                   <AdminOrders />
                 </ProtectedRoute>
               }
@@ -140,7 +174,7 @@ const App = () => (
             <Route
               path="/admin/cost-letters"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminCostLetters />
                 </ProtectedRoute>
               }
@@ -148,7 +182,7 @@ const App = () => (
             <Route
               path="/admin/deliveries"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminDeliveries />
                 </ProtectedRoute>
               }
@@ -156,7 +190,7 @@ const App = () => (
             <Route
               path="/admin/payments"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminPayments />
                 </ProtectedRoute>
               }
@@ -164,7 +198,7 @@ const App = () => (
             <Route
               path="/admin/vendors"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminVendors />
                 </ProtectedRoute>
               }
@@ -172,7 +206,7 @@ const App = () => (
             <Route
               path="/admin/stores"
               element={
-                <ProtectedRoute allowedRoles={["CEE", "SUPER_ADMIN"]}>
+                <ProtectedRoute allowedRoles={[...CORPORATE_ROLES]}>
                   <AdminStores />
                 </ProtectedRoute>
               }

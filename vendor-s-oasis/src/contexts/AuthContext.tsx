@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type UserRole = "SUPER_ADMIN" | "CEE" | "VENDOR" | "STORE_OWNER";
+export type UserRole = "CORPORATE_ADMIN" | "CEE" | "VENDOR" | "STORE_OWNER";
 
 export interface User {
   id: string;
@@ -26,7 +26,10 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (token: string, user: User) => void;
   logout: () => void;
-  isAdmin: boolean;
+  /** Corporate backoffice (catalog + vendors/stores) */
+  isCorporateAdmin: boolean;
+  /** City / territory manager */
+  isCee: boolean;
   isVendor: boolean;
 }
 
@@ -58,12 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const role = state.user?.role;
   const value: AuthContextValue = {
     ...state,
     login,
     logout,
-    isAdmin: state.user?.role === "CEE" || state.user?.role === "SUPER_ADMIN",
-    isVendor: state.user?.role === "VENDOR",
+    isCorporateAdmin: role === "CORPORATE_ADMIN",
+    isCee: role === "CEE",
+    isVendor: role === "VENDOR",
   };
 
   return (

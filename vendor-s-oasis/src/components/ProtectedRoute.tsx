@@ -7,9 +7,16 @@ interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
 }
 
+function homeForRole(role: UserRole): string {
+  if (role === "VENDOR") return "/";
+  if (role === "CEE") return "/cee";
+  if (role === "CORPORATE_ADMIN") return "/admin";
+  return "/login";
+}
+
 /**
  * Redirects to /login if not authenticated.
- * If allowedRoles is set, redirects to / (vendor) or /admin (admin) if role doesn't match.
+ * If allowedRoles is set, redirects to the correct dashboard for the user's role.
  */
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user } = useAuth();
@@ -20,9 +27,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    if (user.role === "VENDOR") return <Navigate to="/" replace />;
-    if (user.role === "CEE" || user.role === "SUPER_ADMIN") return <Navigate to="/admin" replace />;
-    return <Navigate to="/" replace />;
+    return <Navigate to={homeForRole(user.role)} replace />;
   }
 
   return <>{children}</>;

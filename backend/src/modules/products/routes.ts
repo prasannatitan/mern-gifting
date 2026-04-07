@@ -9,6 +9,7 @@ import {
   requireRole,
   unauthorized,
 } from "../../core/router";
+import { notifyAdminsNewProductQueued } from "../emails/notifications";
 
 const prisma = client;
 
@@ -160,11 +161,19 @@ registerRoute(
     const updated = await prisma.product.findUnique({
       where: { id: product.id },
     });
-    return json(updated ?? product, { status: 201 });
+    const out = updated ?? product;
+    notifyAdminsNewProductQueued({
+      productId: out.id,
+      name: out.name,
+      vendorName: vendor.name,
+      basePrice: String(out.basePrice),
+      currency: out.currency,
+    });
+    return json(out, { status: 201 });
   }, [UserRole.VENDOR]),
 );
 
-// CEE approves or rejects a product
+// Corporate admin approves or rejects a product (goes live after approval)
 registerRoute(
   "POST",
   "/products/approve",
@@ -201,7 +210,7 @@ registerRoute(
     });
 
     return json(product);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CORPORATE_ADMIN]),
 );
 
 // List approved products for store owners (catalog)
@@ -214,7 +223,7 @@ registerRoute("GET", "/products", async () => {
   return json(products);
 });
 
-// Admin: list products pending CEE approval
+// Admin: list products pending corporate approval
 registerRoute(
   "GET",
   "/admin/products/pending",
@@ -225,7 +234,7 @@ registerRoute(
       include: { vendor: { select: { name: true } } },
     });
     return json(products);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CORPORATE_ADMIN]),
 );
 
 // Admin: list all products (any status)
@@ -238,7 +247,7 @@ registerRoute(
       include: { vendor: { select: { name: true } } },
     });
     return json(products);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CORPORATE_ADMIN]),
 );
 
 // Vendor: list my products (all statuses)

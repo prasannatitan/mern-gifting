@@ -1,16 +1,23 @@
 import {
   OrderStatus,
   PaymentStatus,
+  Prisma,
   UserRole,
 } from "@prisma/client";
 import { client } from "../../../prisma/index";
 import {
   badRequest,
+  forbidden,
   json,
   registerRoute,
   requireRole,
   unauthorized,
 } from "../../core/router";
+import {
+  notifyCeeOrderPending,
+  notifyStoreEstimateSent,
+  notifyStoreVendorAcceptedOrder,
+} from "../emails/notifications";
 
 const prisma = client;
 
@@ -45,6 +52,15 @@ registerRoute(
     if (!store.isActive) {
       return badRequest("Store account is paused. Contact admin.");
     }
+    if (store.ownerId !== user.id) {
+      return forbidden();
+    }
+    const ceeUserId = (store as { ceeUserId?: string | null }).ceeUserId;
+    if (!ceeUserId) {
+      return badRequest(
+        "This store has no assigned CEE. Contact corporate admin to map the store to a city manager.",
+      );
+    }
 
     const totalAmount = body.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
@@ -55,6 +71,7 @@ registerRoute(
       data: {
         storeId: body.storeId,
         vendorId: body.vendorId,
+        assignedCeeId: ceeUserId,
         status: OrderStatus.PENDING_CEE_APPROVAL,
         paymentStatus: PaymentStatus.UNPAID,
         totalAmount,
@@ -67,11 +84,26 @@ registerRoute(
             totalPrice: i.unitPrice * i.quantity,
           })),
         },
-      },
-      include: { items: true },
+      } as any,
+      include: { items: true, store: true, vendor: true },
     });
 
-    return json(order, { status: 201 });
+    const cee = await prisma.user.findUnique({
+      where: { id: ceeUserId },
+      select: { email: true },
+    });
+    if (cee?.email) {
+      notifyCeeOrderPending({
+        orderId: order.id,
+        ceeEmail: cee.email,
+        storeName: order.store.name,
+        vendorName: order.vendor.name,
+        totalAmount: String(order.totalAmount),
+        currency: order.currency,
+      });
+    }
+
+    return json(order as any, { status: 201 });
   }, [UserRole.STORE_OWNER]),
 );
 
@@ -90,6 +122,19 @@ registerRoute(
 
     if (!body.orderId || typeof body.approve !== "boolean") {
       return badRequest("orderId and approve are required");
+    }
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: body.orderId },
+    });
+    if (!existingOrder) return badRequest("Order not found");
+    const assignedCeeId = (existingOrder as { assignedCeeId?: string | null }).assignedCeeId;
+    if (user.role === UserRole.CEE) {
+      if (assignedCeeId !== user.id) {
+        return forbidden();
+      }
+    } else if (user.role !== UserRole.CORPORATE_ADMIN) {
+      return forbidden();
     }
 
     const status = body.approve
@@ -112,7 +157,7 @@ registerRoute(
     });
 
     return json(order);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CEE, UserRole.CORPORATE_ADMIN]),
 );
 
 // Vendor accepts or rejects order
@@ -148,8 +193,26 @@ registerRoute(
           },
         },
       },
-      include: { approvals: true },
+      include: { approvals: true, store: true, vendor: true },
     });
+
+    if (body.accept) {
+      const owner = order.store.ownerId
+        ? await prisma.user.findUnique({
+            where: { id: order.store.ownerId },
+            select: { email: true },
+          })
+        : null;
+      const toEmail = order.store.email?.trim() || owner?.email;
+      if (toEmail) {
+        notifyStoreVendorAcceptedOrder({
+          orderId: order.id,
+          toEmail,
+          storeName: order.store.name,
+          vendorName: order.vendor.name,
+        });
+      }
+    }
 
     return json(order);
   }, [UserRole.VENDOR]),
@@ -209,6 +272,20 @@ registerRoute(
     const order = await prisma.order.update({
       where: { id: body.orderId },
       data: { status: OrderStatus.ESTIMATE_SENT },
+      include: { store: true, vendor: true },
+    });
+
+    notifyStoreEstimateSent({
+      orderId: order.id,
+      toEmail: body.sentToEmail,
+      storeName: order.store.name,
+      vendorName: order.vendor.name,
+      subtotal: String(estimate.subtotal),
+      taxAmount: String(estimate.taxAmount),
+      shippingAmount: String(estimate.shippingAmount),
+      grandTotal: String(estimate.grandTotal),
+      currency: order.currency,
+      notes: estimate.notes,
     });
 
     return json({ estimate, order });
@@ -232,7 +309,7 @@ registerRoute(
       orderBy: { placedAt: "desc" },
     });
     return json(orders);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CORPORATE_ADMIN]),
 );
 
 // Vendor marks offline payment verified
@@ -267,14 +344,19 @@ registerRoute(
 registerRoute(
   "GET",
   "/admin/orders/pending-cee",
-  requireRole(async () => {
+  requireRole(async ({ user }) => {
+    if (!user) return unauthorized();
+    const where =
+      user.role === UserRole.CEE
+        ? ({ status: OrderStatus.PENDING_CEE_APPROVAL, assignedCeeId: user.id } as Prisma.OrderWhereInput)
+        : ({ status: OrderStatus.PENDING_CEE_APPROVAL } as Prisma.OrderWhereInput);
     const orders = await prisma.order.findMany({
-      where: { status: OrderStatus.PENDING_CEE_APPROVAL },
+      where,
       include: { store: true, vendor: true },
       orderBy: { placedAt: "asc" },
     });
     return json(orders);
-  }, [UserRole.CEE, UserRole.SUPER_ADMIN]),
+  }, [UserRole.CEE, UserRole.CORPORATE_ADMIN]),
 );
 
 registerRoute(

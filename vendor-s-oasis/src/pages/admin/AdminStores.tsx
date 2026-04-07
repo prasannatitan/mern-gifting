@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
-import { apiRequest, type ApiStoreAdmin } from "@/lib/api";
+import { apiRequest, type ApiCeeUser, type ApiStoreAdmin } from "@/lib/api";
 import { Pause, Play, Store } from "lucide-react";
 
 const AdminStoresPage = () => {
   const [stores, setStores] = useState<ApiStoreAdmin[]>([]);
+  const [ceeUsers, setCeeUsers] = useState<ApiCeeUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -14,8 +15,12 @@ const AdminStoresPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiRequest<ApiStoreAdmin[]>("/admin/stores");
-      setStores(data);
+      const [storeData, ceeData] = await Promise.all([
+        apiRequest<ApiStoreAdmin[]>("/admin/stores"),
+        apiRequest<ApiCeeUser[]>("/admin/cee-users"),
+      ]);
+      setStores(storeData);
+      setCeeUsers(ceeData);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load stores");
     } finally {
@@ -42,10 +47,25 @@ const AdminStoresPage = () => {
     }
   };
 
+  const setStoreCee = async (storeId: string, ceeUserId: string) => {
+    setActionId(storeId);
+    try {
+      await apiRequest("/admin/stores", {
+        method: "PATCH",
+        body: JSON.stringify({ storeId, ceeUserId: ceeUserId || null }),
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to assign CEE");
+    } finally {
+      setActionId(null);
+    }
+  };
+
   return (
     <AdminLayout
       title="Stores"
-      subtitle="View and manage store (franchise) accounts. Pause to block new orders."
+      subtitle="Map each store to a CEE — orders route to that manager. Pause to block new orders."
     >
       {error && (
         <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -60,6 +80,7 @@ const AdminStoresPage = () => {
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Store</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Owner</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Contact</th>
+              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">CEE (territory)</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Orders</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Status</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Action</th>
@@ -68,13 +89,13 @@ const AdminStoresPage = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
                   Loading…
                 </td>
               </tr>
             ) : stores.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
                   No stores yet.
                 </td>
               </tr>
@@ -109,6 +130,21 @@ const AdminStoresPage = () => {
                     {s.email && <p className="text-foreground">{s.email}</p>}
                     {s.phone && <p className="text-muted-foreground">{s.phone}</p>}
                     {!s.email && !s.phone && "—"}
+                  </td>
+                  <td className="px-5 py-4 text-sm">
+                    <select
+                      className="max-w-[200px] rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                      value={s.ceeUser?.id ?? ""}
+                      disabled={actionId === s.id}
+                      onChange={(e) => setStoreCee(s.id, e.target.value)}
+                    >
+                      <option value="">— Unassigned —</option>
+                      {ceeUsers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.email})
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-5 py-4 text-sm font-medium text-foreground">
                     {s._count?.orders ?? 0}

@@ -1,6 +1,7 @@
 import { client } from "../../../prisma/index";
+import { sendPostmarkHtml, isPostmarkConfigured } from "./postmark";
 
-const prisma = client
+const prisma = client;
 
 type EmailPayload = Record<string, unknown>;
 
@@ -8,29 +9,46 @@ export type EmailTemplate =
   | "PRODUCT_APPROVAL"
   | "ORDER_APPROVAL"
   | "ESTIMATE_SENT"
+  | "VENDOR_ORDER_ACCEPTED"
   | "PAYMENT_VERIFIED"
   | "SHIPMENT_DISPATCHED"
   | "DELIVERED"
   | "INVOICE";
 
-export async function sendEmail(
+/**
+ * Sends HTML email via Postmark when configured; always writes EmailLog.
+ */
+export async function sendHtmlEmail(
   to: string,
   subject: string,
   template: EmailTemplate,
   payload: EmailPayload,
-) {
-  // Placeholder for real provider integration (e.g. SendGrid, Postmark, SES)
-  console.log("Sending email", { to, subject, template, payload });
+  htmlBody: string,
+): Promise<void> {
+  let status = "SKIPPED";
+  let error: string | null = null;
 
-  // Record in EmailLog
+  if (isPostmarkConfigured()) {
+    const result = await sendPostmarkHtml(to, subject, htmlBody);
+    if (result.ok) {
+      status = "SENT";
+    } else {
+      status = "FAILED";
+      error = result.error;
+      console.error("[email]", error);
+    }
+  } else {
+    console.log("[email] Postmark not configured; log only", { to, subject, template });
+  }
+
   await prisma.emailLog.create({
     data: {
       to,
       subject,
       template,
-      payload,
-      status: "SENT",
+      payload: payload as object,
+      status,
+      error,
     },
   });
 }
-

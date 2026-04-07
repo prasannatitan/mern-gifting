@@ -31,7 +31,7 @@ export function Categories() {
   return (
     <div className="min-h-screen">
       <div className="border-b border-gray-200 bg-white py-6">
-        <div className="mx-auto max-w-6xl px-4">
+        {/* <div className="mx-auto max-w-6xl px-4">
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
           <p className="text-sm text-gray-500">Browse by category</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -50,7 +50,7 @@ export function Categories() {
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8">

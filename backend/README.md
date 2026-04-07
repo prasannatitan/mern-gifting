@@ -23,7 +23,9 @@ This is the backend for the multivendor bulk-order e‑commerce MVP for Tanishq 
 - `src/modules/shipments`
   - `routes.ts`: shipment creation/update and webhook-ready endpoint.
 - `src/modules/emails`
-  - `service.ts`: email abstraction that logs to `EmailLog` (plug in real provider later).
+  - `service.ts`, `postmark.ts`: Postmark delivery + `EmailLog`.
+  - `notifications.ts`: triggers for new products, CEE orders, vendor acceptance, estimates.
+  - `routes.ts`: `GET /email/action?token=...` for one-click approve/reject from email.
 - `src/health.ts`: `/health` endpoint.
 
 ### Environment variables
@@ -33,6 +35,17 @@ Create `.env` in `backend` (Prisma already created one) and set:
 ```bash
 DATABASE_URL="postgresql://user:password@localhost:5432/tanishq_mvp"
 JWT_SECRET="a-strong-random-secret"
+```
+
+**Email (Postmark)** — required to send real mail (product approval, CEE order approval, estimates). Without these, messages are only logged to `EmailLog`.
+
+```bash
+POSTMARK_SERVER_TOKEN="your-server-api-token"
+POSTMARK_FROM="orders@your-verified-domain.com"
+# Base URL of this API (no trailing slash) — used in Approve/Reject links in emails
+PUBLIC_APP_URL="https://your-api.example.com"
+# Optional: separate secret for email action tokens (defaults to JWT_SECRET)
+# EMAIL_ACTION_SECRET="another-long-random-string"
 ```
 
 **Product images (Cloudflare R2)** — required when vendors upload images:
@@ -97,22 +110,22 @@ The server runs on `http://localhost:3000`.
 ### High-level API overview
 
 - **Auth**
-  - `POST /auth/register` – create a user with role (`SUPER_ADMIN`, `CEE`, `VENDOR`, `STORE_OWNER`).
+  - `POST /auth/register` – create a user with role (`CORPORATE_ADMIN`, `CEE`, `VENDOR`, `STORE_OWNER`).
   - `POST /auth/login` – returns `{ token, user }` (JWT).
   - `POST /auth/bootstrap-admin` – helper to create initial users.
 - **Health**
   - `GET /health`
 - **Products**
   - `POST /vendors/products` (VENDOR) – create product `PENDING_APPROVAL`.
-  - `POST /products/approve` (CEE / SUPER_ADMIN) – approve/reject product.
+  - `POST /products/approve` (CORPORATE_ADMIN) – approve/reject product (goes live).
   - `GET /products` – list approved products (store catalog).
 - **Orders**
   - `POST /stores/orders` (STORE_OWNER) – place order (`PENDING_CEE_APPROVAL`).
-  - `POST /orders/cee-approval` (CEE / SUPER_ADMIN) – approve/reject order.
+  - `POST /orders/cee-approval` (CEE for own territory, or CORPORATE_ADMIN for any) – approve/reject order.
   - `POST /orders/vendor-decision` (VENDOR) – accept/reject order.
   - `POST /orders/estimate` (VENDOR) – create/update estimate and mark `ESTIMATE_SENT`.
   - `POST /orders/payment-verify` (VENDOR) – mark offline payment verified (`PAYMENT_CONFIRMED`).
-  - `GET /admin/orders/pending-cee` (CEE / SUPER_ADMIN) – approval queue.
+  - `GET /admin/orders/pending-cee` (CEE: own territory only; CORPORATE_ADMIN: all pending).
   - `GET /vendors/me/orders` (VENDOR) – vendor’s orders.
   - `GET /stores/me/orders` (STORE_OWNER) – store’s orders with shipment + estimate.
 - **Shipments**

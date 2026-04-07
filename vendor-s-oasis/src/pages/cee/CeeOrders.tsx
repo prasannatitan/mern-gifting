@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+import { CeeLayout } from "@/components/cee/CeeLayout";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest, type ApiOrder } from "@/lib/api";
 
-const AdminOrdersPage = () => {
+export default function CeeOrdersPage() {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ const AdminOrdersPage = () => {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const handleApprove = async (orderId: string) => {
@@ -59,27 +59,22 @@ const AdminOrdersPage = () => {
   };
 
   return (
-    <AdminLayout
-      title="Orders — all regions"
-      subtitle="Corporate view: every order still pending CEE approval (any territory)"
-    >
+    <CeeLayout title="Order queue" subtitle="Approve or reject orders from stores in your territory">
       {error && (
-        <p className="mb-4 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-          {error}
-        </p>
+        <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
       )}
 
-      <div className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
+      <div className="animate-fade-in overflow-hidden rounded-xl bg-card shadow-card">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Order ID</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Store</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Vendor</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Date</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Total</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Status</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Action</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Order</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Store</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Vendor</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Date</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Total</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -92,28 +87,24 @@ const AdminOrdersPage = () => {
             ) : orders.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
-                  No orders awaiting CEE approval.
+                  No orders awaiting your approval.
                 </td>
               </tr>
             ) : (
               orders.map((order) => (
                 <tr
                   key={order.id}
-                  className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
+                  className="border-b border-border transition-colors last:border-0 hover:bg-secondary/50"
                 >
-                  <td className="px-5 py-4 text-sm font-mono font-semibold text-foreground">
+                  <td className="px-5 py-4 font-mono text-sm font-semibold text-foreground">
                     #{order.id.slice(0, 8)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {order.store?.name ?? "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {order.vendor?.name ?? "—"}
-                  </td>
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{order.store?.name ?? "—"}</td>
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{order.vendor?.name ?? "—"}</td>
                   <td className="px-5 py-4 text-sm text-muted-foreground">
                     {new Date(order.placedAt).toLocaleString()}
                   </td>
-                  <td className="px-5 py-4 text-sm font-mono font-medium text-foreground">
+                  <td className="px-5 py-4 font-mono text-sm font-medium text-foreground">
                     ₹{Number(order.totalAmount).toFixed(2)}
                   </td>
                   <td className="px-5 py-4">
@@ -125,18 +116,18 @@ const AdminOrdersPage = () => {
                         size="sm"
                         onClick={() => handleApprove(order.id)}
                         disabled={actionId === order.id}
-                        className="bg-success text-success-foreground hover:bg-success/90 gap-1 text-xs h-8"
+                        className="h-8 gap-1 bg-success text-xs text-success-foreground hover:bg-success/90"
                       >
-                        <Check className="w-3.5 h-3.5" /> Approve
+                        <Check className="h-3.5 w-3.5" /> Approve
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleReject(order.id)}
                         disabled={actionId === order.id}
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1 text-xs h-8"
+                        className="h-8 gap-1 border-destructive/30 text-xs text-destructive hover:bg-destructive/10"
                       >
-                        <X className="w-3.5 h-3.5" /> Reject
+                        <X className="h-3.5 w-3.5" /> Reject
                       </Button>
                     </div>
                   </td>
@@ -146,8 +137,6 @@ const AdminOrdersPage = () => {
           </tbody>
         </table>
       </div>
-    </AdminLayout>
+    </CeeLayout>
   );
-};
-
-export default AdminOrdersPage;
+}

@@ -10,7 +10,8 @@
     "start:prod": "bunx prisma migrate deploy && bun run start",
     "prisma:generate": "bunx prisma generate",
     "prisma:migrate": "bunx prisma migrate dev",
-    "prisma:migrate:deploy": "bunx prisma migrate deploy"
+    "prisma:migrate:deploy": "bunx prisma migrate deploy",
+    "db:seed": "bunx prisma db seed"
   },
   "engines": {
     "bun": ">=1.0.0"

@@ -13,7 +13,7 @@ datasource db {
 }
 
 enum UserRole {
-  SUPER_ADMIN
+  CORPORATE_ADMIN
   CEE
   VENDOR
   STORE_OWNER
@@ -75,6 +75,12 @@ model User {
 
   ownedStores Store[] @relation("StoreOwner")
 
+  /** CEE users: stores in this manager's territory */
+  managedStores Store[] @relation("StoreCee")
+
+  /** Snapshot on order: which CEE must approve */
+  assignedOrders Order[] @relation("OrderAssignedCee")
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -106,6 +112,9 @@ model Store {
 
   owner     User?     @relation("StoreOwner", fields: [ownerId], references: [id])
   ownerId   String?
+
+  ceeUser   User?     @relation("StoreCee", fields: [ceeUserId], references: [id])
+  ceeUserId String?
 
   users     User[]    @relation("UserStore")
 
@@ -161,6 +170,9 @@ model Order {
 
   vendor            Vendor        @relation(fields: [vendorId], references: [id])
   vendorId          String
+
+  assignedCee       User?         @relation("OrderAssignedCee", fields: [assignedCeeId], references: [id])
+  assignedCeeId       String?
 
   status            OrderStatus   @default(PENDING_CEE_APPROVAL)
   paymentStatus     PaymentStatus @default(UNPAID)

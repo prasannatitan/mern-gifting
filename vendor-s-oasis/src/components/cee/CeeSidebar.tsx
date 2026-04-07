@@ -1,31 +1,14 @@
-import {
-  Package,
-  ShoppingCart,
-  FileText,
-  Truck,
-  CreditCard,
-  LayoutDashboard,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
-  Store,
-  Building2,
-} from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Building2, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useState } from "react";
 
 const navItems = [
-  { title: "Overview", url: "/admin", icon: LayoutDashboard },
-  { title: "Products", url: "/admin/products", icon: Package },
-  { title: "Orders (all regions)", url: "/admin/orders", icon: ShoppingCart },
-  { title: "Cost Letters", url: "/admin/cost-letters", icon: FileText },
-  { title: "Deliveries", url: "/admin/deliveries", icon: Truck },
-  { title: "Payments", url: "/admin/payments", icon: CreditCard },
-  { title: "Vendors", url: "/admin/vendors", icon: Store },
-  { title: "Stores", url: "/admin/stores", icon: Building2 },
+  { title: "Overview", url: "/cee", icon: LayoutDashboard },
+  { title: "Order queue", url: "/cee/orders", icon: ShoppingCart },
+  { title: "My stores", url: "/cee/stores", icon: Building2 },
 ];
 
-export const AdminSidebar = () => {
+export function CeeSidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -37,17 +20,17 @@ export const AdminSidebar = () => {
       <div className="flex h-16 items-center border-b border-sidebar-border px-4">
         {!collapsed && (
           <div className="flex animate-slide-in items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/80">
-              <Shield className="h-4 w-4 text-destructive-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/90">
+              <MapPin className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">
-              Corporate
+              CEE Console
             </span>
           </div>
         )}
         {collapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/80">
-            <Shield className="h-4 w-4 text-destructive-foreground" />
+          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary/90">
+            <MapPin className="h-4 w-4 text-primary-foreground" />
           </div>
         )}
       </div>
@@ -57,7 +40,7 @@ export const AdminSidebar = () => {
           <NavLink
             key={item.title}
             to={item.url}
-            end={item.url === "/admin"}
+            end={item.url === "/cee"}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             activeClassName="bg-sidebar-accent font-medium text-[#fff]"
           >
@@ -76,4 +59,4 @@ export const AdminSidebar = () => {
       </button>
     </aside>
   );
-};
+}

@@ -101,7 +101,10 @@ const AdminProductsPage = () => {
   };
 
   return (
-    <AdminLayout title="Products Review" subtitle="Approve or reject vendor product listings">
+    <AdminLayout
+      title="Products review"
+      subtitle="Corporate approval — approved products appear on the live store"
+    >
       <div className="flex gap-2 mb-6">
         {(["Pending", "All", "Approved", "Rejected"] as const).map((f) => (
           <button

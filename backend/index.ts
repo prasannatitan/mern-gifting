@@ -9,6 +9,8 @@ import "./src/modules/products/routes";
 import "./src/modules/orders/routes";
 import "./src/modules/shipments/routes";
 import "./src/modules/admin/routes";
+import "./src/modules/cee/routes";
+import "./src/modules/emails/routes";
 
 // Basic health check (stays here as top-level)
 import "./src/health";

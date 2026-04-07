@@ -3,13 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
-import {
-  Package,
-  ShoppingCart,
-  FileText,
-  Truck,
-  CreditCard,
-} from "lucide-react";
+import { Package, ShoppingCart, FileText, Truck, CreditCard } from "lucide-react";
 import { apiRequest, type ApiOrder, type ApiProduct } from "@/lib/api";
 
 type QueueItemType = "product" | "order" | "cost_letter";
@@ -34,17 +28,12 @@ const AdminOverview = () => {
     const load = async () => {
       try {
         setError(null);
-        const [allProducts, pendingOrdersData, costLettersData] = await Promise.all([
-          apiRequest<ApiProduct[]>("/admin/products"),
-          apiRequest<ApiOrder[]>("/admin/orders/pending-cee"),
-          apiRequest<ApiOrder[]>("/admin/cost-letters"),
-        ]);
-
-        setPendingProducts(
-          allProducts.filter((p) => p.status === "PENDING_APPROVAL")
-        );
-        setPendingOrders(pendingOrdersData);
+        const allProducts = await apiRequest<ApiProduct[]>("/admin/products");
+        const costLettersData = await apiRequest<ApiOrder[]>("/admin/cost-letters");
+        setPendingProducts(allProducts.filter((p) => p.status === "PENDING_APPROVAL"));
         setCostLetters(costLettersData);
+        const pendingOrdersData = await apiRequest<ApiOrder[]>("/admin/orders/pending-cee");
+        setPendingOrders(pendingOrdersData);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load overview");
       }
@@ -60,7 +49,7 @@ const AdminOverview = () => {
     ...pendingProducts.slice(0, 3).map((p) => ({
       id: p.id,
       type: "product" as const,
-      title: `${p.name} — Pending approval`,
+      title: `${p.name} — Pending corporate approval`,
       vendor: p.vendor?.name ?? "—",
       time: new Date(p.createdAt).toLocaleString(),
       category: "Products",
@@ -68,7 +57,7 @@ const AdminOverview = () => {
     ...pendingOrders.slice(0, 3).map((o) => ({
       id: o.id,
       type: "order" as const,
-      title: `Order #${o.id.slice(0, 8)} — CEE review`,
+      title: `Order #${o.id.slice(0, 8)} — All regions`,
       vendor: o.vendor?.name ?? "—",
       time: new Date(o.placedAt).toLocaleString(),
       category: "Orders",
@@ -89,8 +78,8 @@ const AdminOverview = () => {
 
   return (
     <AdminLayout
-      title="Admin Dashboard"
-      subtitle="Overview of all pending approvals"
+      title="Corporate dashboard"
+      subtitle="Product approvals, partners, and operations"
     >
       <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
@@ -99,7 +88,7 @@ const AdminOverview = () => {
           icon={<Package className="w-5 h-5 text-muted-foreground" />}
         />
         <StatCard
-          label="Pending Orders"
+          label="Pending orders (all CEEs)"
           value={pendingOrdersCount}
           icon={<ShoppingCart className="w-5 h-5 text-muted-foreground" />}
         />

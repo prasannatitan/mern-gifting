@@ -132,6 +132,12 @@ export interface ApiVendor {
   _count?: { products: number; orders: number };
 }
 
+export interface ApiCeeUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
 export interface ApiStoreAdmin {
   id: string;
   name: string;
@@ -142,5 +148,6 @@ export interface ApiStoreAdmin {
   isActive: boolean;
   createdAt: string;
   owner?: { id: string; name: string; email: string } | null;
+  ceeUser?: { id: string; name: string; email: string } | null;
   _count?: { orders: number };
 }
