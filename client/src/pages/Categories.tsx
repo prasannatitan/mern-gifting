@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import { apiRequest, publicImageUrl, type ApiProduct } from "@/lib/api.ts";
 import { useCart } from "@/contexts/CartContext.tsx";
 
-const CATEGORIES = ["All", "Rings", "Necklaces", "Earrings", "Bangles", "Other"];
+// const CATEGORIES = ["All", "Rings", "Necklaces", "Earrings", "Bangles", "Other"];
 
 export function Categories() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [category, setCategory] = useState("All");
+  // const [category, setCategory] = useState("All");
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -19,14 +19,14 @@ export function Categories() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered =
-    category === "All"
-      ? products
-      : products.filter((p) => {
-          const name = (p.name ?? "").toLowerCase();
-          const cat = category.toLowerCase();
-          return name.includes(cat) || (category === "Other" && !CATEGORIES.some((c) => c !== "All" && name.includes(c.toLowerCase())));
-        });
+  // const filtered =
+  //   category === "All"
+  //     ? products
+  //     : products.filter((p) => {
+  //         const name = (p.name ?? "").toLowerCase();
+  //         const cat = category.toLowerCase();
+  //         return name.includes(cat) || (category === "Other" && !CATEGORIES.some((c) => c !== "All" && name.includes(c.toLowerCase())));
+  //       });
 
   return (
     <div className="min-h-screen">
@@ -67,7 +67,7 @@ export function Categories() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((p) => (
+            {products.map((p) => (
               <div
                 key={p.id}
                 className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
@@ -100,7 +100,7 @@ export function Categories() {
             ))}
           </div>
         )}
-        {!loading && filtered.length === 0 && !error && (
+        {!loading && products.length === 0 && !error && (
           <p className="py-12 text-center text-gray-500">No products in this category.</p>
         )}
       </div>
