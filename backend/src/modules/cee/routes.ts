@@ -21,3 +21,18 @@ registerRoute(
     return json(stores);
   }, [UserRole.CEE]),
 );
+
+/** Full order log for this CEE's territory */
+registerRoute(
+  "GET",
+  "/cee/orders",
+  requireRole(async ({ user }) => {
+    if (!user) return unauthorized();
+    const orders = await prisma.order.findMany({
+      where: { assignedCeeId: user.id },
+      include: { store: true, vendor: true, approvals: true, estimate: true, shipment: true },
+      orderBy: { placedAt: "desc" },
+    });
+    return json(orders as any);
+  }, [UserRole.CEE]),
+);

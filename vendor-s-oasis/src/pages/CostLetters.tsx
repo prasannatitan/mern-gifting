@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { apiRequest, type ApiOrder, type ApiEstimateCreate } from "@/lib/api";
+import { OrderBillingDetails } from "@/components/orders/OrderBillingDetails";
 
 const CostLettersPage = () => {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -199,6 +200,9 @@ const CostLettersPage = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {order.items?.length ?? 0} items · ₹{Number(order.totalAmount).toFixed(2)}
                   </p>
+                  <div className="mt-2 border-t border-border pt-2">
+                    <OrderBillingDetails order={order} />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">

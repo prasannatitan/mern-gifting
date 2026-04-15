@@ -150,3 +150,60 @@ ${notesBlock}`;
     await sendHtmlEmail(input.toEmail, subject, "ESTIMATE_SENT", { orderId: input.orderId }, html);
   })());
 }
+
+export function notifyVendorRejectedBackToCee(input: {
+  orderId: string;
+  ceeEmail: string;
+  ceeName?: string | null;
+  storeName: string;
+  vendorName: string;
+  reason: string;
+}): void {
+  fire((async () => {
+    const inner = `
+<h1 style="font-size:20px;">Order sent back for your review</h1>
+<p>Order <strong>${escapeHtml(input.orderId)}</strong></p>
+<p>Store: ${escapeHtml(input.storeName)} · Vendor: ${escapeHtml(input.vendorName)}</p>
+<p><strong>Vendor rejection reason:</strong> ${escapeHtml(input.reason)}</p>
+<p>Please review and take a fresh approval decision.</p>`;
+
+    const html = wrapEmail(inner, "Order returned to CEE");
+    const subject = `[Review again] Vendor rejected order ${input.orderId}`;
+
+    await sendHtmlEmail(
+      input.ceeEmail,
+      subject,
+      "ORDER_VENDOR_REJECTED_BACK_TO_CEE",
+      { orderId: input.orderId, reason: input.reason },
+      html,
+    );
+  })());
+}
+
+export function notifyStoreVendorRejectedOrder(input: {
+  orderId: string;
+  toEmail: string;
+  storeName: string;
+  vendorName: string;
+  reason: string;
+}): void {
+  fire((async () => {
+    const inner = `
+<h1 style="font-size:20px;">Vendor rejected your order</h1>
+<p>Order <strong>${escapeHtml(input.orderId)}</strong> — ${escapeHtml(input.storeName)}</p>
+<p>Vendor: ${escapeHtml(input.vendorName)}</p>
+<p><strong>Reason:</strong> ${escapeHtml(input.reason)}</p>
+<p>The order has been sent back to your CEE for re-evaluation.</p>`;
+
+    const html = wrapEmail(inner, "Order rejected by vendor");
+    const subject = `Order rejected by vendor — ${input.orderId}`;
+
+    await sendHtmlEmail(
+      input.toEmail,
+      subject,
+      "ORDER_VENDOR_REJECTED_STORE",
+      { orderId: input.orderId, reason: input.reason },
+      html,
+    );
+  })());
+}

@@ -80,9 +80,23 @@ model User {
 
   /** Snapshot on order: which CEE must approve */
   assignedOrders Order[] @relation("OrderAssignedCee")
+  passwordResetOtps PasswordResetOtp[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model PasswordResetOtp {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
 }
 
 model Vendor {
@@ -176,8 +190,17 @@ model Order {
 
   status            OrderStatus   @default(PENDING_CEE_APPROVAL)
   paymentStatus     PaymentStatus @default(UNPAID)
-  totalAmount       Decimal       @db.Decimal(10, 2)
+  totalAmount       Decimal       @db.Decimal(18, 2)
   currency          String        @default("INR")
+
+  /** Collected at store checkout (billing / dispatch contact) */
+  contactName       String?
+  contactPhone      String?
+  shippingAddress   String?
+  shippingState     String?
+  shippingCity      String?
+  shippingPincode   String?
+  gstNumber         String?
 
   items             OrderItem[]
   approvals         OrderApproval[]
@@ -201,8 +224,8 @@ model OrderItem {
   productId  String
 
   quantity   Int
-  unitPrice  Decimal  @db.Decimal(10, 2)
-  totalPrice Decimal  @db.Decimal(10, 2)
+  unitPrice  Decimal  @db.Decimal(18, 2)
+  totalPrice Decimal  @db.Decimal(18, 2)
 }
 
 model OrderApproval {
@@ -224,10 +247,10 @@ model Estimate {
   order          Order    @relation(fields: [orderId], references: [id])
   orderId        String   @unique
 
-  subtotal       Decimal  @db.Decimal(10, 2)
-  taxAmount      Decimal  @db.Decimal(10, 2)
-  shippingAmount Decimal  @db.Decimal(10, 2)
-  grandTotal     Decimal  @db.Decimal(10, 2)
+  subtotal       Decimal  @db.Decimal(18, 2)
+  taxAmount      Decimal  @db.Decimal(18, 2)
+  shippingAmount Decimal  @db.Decimal(18, 2)
+  grandTotal     Decimal  @db.Decimal(18, 2)
   notes          String?
 
   sentToEmail    String

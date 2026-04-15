@@ -8,12 +8,15 @@ type EmailPayload = Record<string, unknown>;
 export type EmailTemplate =
   | "PRODUCT_APPROVAL"
   | "ORDER_APPROVAL"
+  | "ORDER_VENDOR_REJECTED_BACK_TO_CEE"
+  | "ORDER_VENDOR_REJECTED_STORE"
   | "ESTIMATE_SENT"
   | "VENDOR_ORDER_ACCEPTED"
   | "PAYMENT_VERIFIED"
   | "SHIPMENT_DISPATCHED"
   | "DELIVERED"
-  | "INVOICE";
+  | "INVOICE"
+  | "FORGOT_PASSWORD_OTP";
 
 /**
  * Sends HTML email via Postmark when configured; always writes EmailLog.

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { VerificationSteps } from "@/components/dashboard/VerificationSteps";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { apiRequest, type ApiOrder } from "@/lib/api";
+import { OrderBillingDetails } from "@/components/orders/OrderBillingDetails";
 
 const statusToLabel: Record<string, string> = {
   PENDING_CEE_APPROVAL: "Pending CEE",
@@ -55,6 +56,8 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -73,19 +76,32 @@ const OrdersPage = () => {
     load();
   }, []);
 
-  const vendorDecision = async (orderId: string, accept: boolean) => {
+  const vendorDecision = async (orderId: string, accept: boolean, remarks?: string) => {
     setActionId(orderId);
     try {
       await apiRequest("/orders/vendor-decision", {
         method: "POST",
-        body: JSON.stringify({ orderId, accept }),
+        body: JSON.stringify({ orderId, accept, remarks }),
       });
+      if (!accept) {
+        setRejectingOrderId(null);
+        setRejectReason("");
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update order");
     } finally {
       setActionId(null);
     }
+  };
+
+  const submitReject = async (orderId: string) => {
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setError("Rejection reason is required.");
+      return;
+    }
+    await vendorDecision(orderId, false, reason);
   };
 
   const verifyPayment = async (orderId: string) => {
@@ -138,71 +154,121 @@ const OrdersPage = () => {
               </tr>
             ) : (
               orders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
-                >
-                  <td className="px-5 py-4">
-                    <span className="text-sm font-mono font-semibold text-foreground">
-                      #{order.id.slice(0, 8)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {order.store?.name ?? "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {new Date(order.placedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-mono text-foreground">
-                    ₹{Number(order.totalAmount).toFixed(2)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusBadge
-                      label={statusToLabel[order.status] ?? order.status}
-                      variant={statusToVariant[order.status] ?? "muted"}
-                    />
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      ({order.paymentStatus})
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <VerificationSteps steps={getOrderSteps(order.status)} size="sm" />
-                  </td>
-                  <td className="px-5 py-4">
-                    {(order.status === "PENDING_VENDOR_ACCEPTANCE" || order.status === "PENDING_CEE_APPROVAL") && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-success text-success-foreground hover:bg-success/90 h-8 text-xs"
-                          disabled={actionId === order.id}
-                          onClick={() => vendorDecision(order.id, true)}
-                        >
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive border-destructive/30 h-8 text-xs"
-                          disabled={actionId === order.id}
-                          onClick={() => vendorDecision(order.id, false)}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                    {order.status === "ESTIMATE_SENT" &&
-                      order.paymentStatus !== "VERIFIED" && (
-                        <Button
-                          size="sm"
-                          className="bg-amber-600 text-white hover:bg-amber-700 h-8 text-xs"
-                          disabled={actionId === order.id}
-                          onClick={() => verifyPayment(order.id)}
-                        >
-                          Mark payment verified
-                        </Button>
+                <Fragment key={order.id}>
+                  <tr className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-mono font-semibold text-foreground">
+                        #{order.id.slice(0, 8)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {order.store?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {new Date(order.placedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-mono text-foreground">
+                      ₹{Number(order.totalAmount).toFixed(2)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge
+                        label={statusToLabel[order.status] ?? order.status}
+                        variant={statusToVariant[order.status] ?? "muted"}
+                      />
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({order.paymentStatus})
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <VerificationSteps steps={getOrderSteps(order.status)} size="sm" />
+                    </td>
+                    <td className="px-5 py-4">
+                      {order.status === "PENDING_VENDOR_ACCEPTANCE" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-success text-success-foreground hover:bg-success/90 h-8 text-xs"
+                            disabled={actionId === order.id}
+                            onClick={() => vendorDecision(order.id, true)}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive border-destructive/30 h-8 text-xs"
+                            disabled={actionId === order.id}
+                            onClick={() => {
+                              setError(null);
+                              setRejectingOrderId((prev) => (prev === order.id ? null : order.id));
+                              setRejectReason("");
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
                       )}
-                  </td>
-                </tr>
+                      {order.status === "ESTIMATE_SENT" &&
+                        order.paymentStatus !== "VERIFIED" && (
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 text-white hover:bg-amber-700 h-8 text-xs"
+                            disabled={actionId === order.id}
+                            onClick={() => verifyPayment(order.id)}
+                          >
+                            Mark payment verified
+                          </Button>
+                        )}
+                    </td>
+                  </tr>
+                  {rejectingOrderId === order.id && (
+                    <tr className="border-b border-border bg-destructive/5">
+                      <td colSpan={7} className="px-5 py-3">
+                        <p className="mb-2 text-xs font-medium text-destructive">
+                          Enter vendor rejection reason (will be emailed to CEE and store)
+                        </p>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            rows={2}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            placeholder="Reason for rejection..."
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              disabled={actionId === order.id}
+                              onClick={() => submitReject(order.id)}
+                            >
+                              Confirm reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                setRejectingOrderId(null);
+                                setRejectReason("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="border-b border-border bg-muted/30 last:border-0">
+                    <td colSpan={7} className="px-5 py-3">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Checkout details
+                      </p>
+                      <OrderBillingDetails order={order} />
+                    </td>
+                  </tr>
+                </Fragment>
               ))
             )}
           </tbody>

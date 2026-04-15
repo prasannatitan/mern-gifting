@@ -10,6 +10,7 @@ import { Categories } from "@/pages/Categories.tsx";
 import { Product } from "@/pages/Product.tsx";
 import { Profile } from "@/pages/profile.tsx";
 import { Login } from "@/pages/Login.tsx";
+import { ForgotPassword } from "@/pages/ForgotPassword.tsx";
 import { Checkout } from "@/pages/Checkout.tsx";
 import { OrderSuccess } from "@/pages/OrderSuccess.tsx";
 import Footer from "@/components/Footer.tsx";
@@ -25,6 +26,7 @@ function AppLayout() {
           <Route path="/collections" element={<Categories />} />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/profile" element={<Profile />} />
           <Route
             path="/checkout"

@@ -1,14 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiRequest, publicImageUrl, type ApiProduct } from "@/lib/api.ts";
 import { useCart } from "@/contexts/CartContext.tsx";
-import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, X, ZoomIn, ZoomOut } from "lucide-react";
 
 export function Product() {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<ApiProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
+  const [qtyStr, setQtyStr] = useState("1");
+  const [qtyTooltip, setQtyTooltip] = useState<string | null>(null);
+  const qtyTooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -66,7 +69,23 @@ export function Product() {
 
   useEffect(() => {
     setQty(minOrderQty);
+    setQtyStr(String(minOrderQty));
   }, [minOrderQty, product?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (qtyTooltipTimer.current) clearTimeout(qtyTooltipTimer.current);
+    };
+  }, []);
+
+  const showQtyTooltip = (message: string) => {
+    if (qtyTooltipTimer.current) clearTimeout(qtyTooltipTimer.current);
+    setQtyTooltip(message);
+    qtyTooltipTimer.current = setTimeout(() => {
+      setQtyTooltip(null);
+      qtyTooltipTimer.current = null;
+    }, 2800);
+  };
 
   useEffect(() => {
     if (!hasGallery) return;
@@ -91,6 +110,39 @@ export function Product() {
       </div>
     );
   }
+
+  const maxOrderCap =
+    product.maxOrderQuantity == null
+      ? Number.POSITIVE_INFINITY
+      : Math.max(minOrderQty, product.maxOrderQuantity);
+  const maxQty = Math.max(minOrderQty, Math.min(stockQty || minOrderQty, maxOrderCap, 100000));
+  const minTooltipText = `Minimum order quantity is ${minOrderQty}`;
+  const orderCap =
+    product.maxOrderQuantity == null ? null : Math.max(minOrderQty, product.maxOrderQuantity);
+  const maxTooltipText =
+    stockQty > 0 &&
+    maxQty === stockQty &&
+    (orderCap == null || stockQty <= orderCap)
+      ? `Only ${maxQty} available in stock`
+      : orderCap != null && maxQty === orderCap && orderCap < (stockQty || minOrderQty)
+        ? `Maximum order quantity is ${product.maxOrderQuantity}`
+        : `Maximum quantity is ${maxQty}`;
+
+  const atQtyMin = qty <= minOrderQty;
+  const atQtyMax = qty >= maxQty;
+
+  const commitQtyInput = (raw: string) => {
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n) || n < 1) {
+      setQtyStr(String(qty));
+      return;
+    }
+    if (n < minOrderQty) showQtyTooltip(minTooltipText);
+    else if (n > maxQty) showQtyTooltip(maxTooltipText);
+    const clamped = Math.min(maxQty, Math.max(minOrderQty, n));
+    setQty(clamped);
+    setQtyStr(String(clamped));
+  };
 
   return (
     <div className="min-h-screen">
@@ -153,23 +205,95 @@ export function Product() {
               )}
             </div>
            
-            <div className="mt-6 flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">
-                Qty
-                <input
-                  type="number"
-                  min={minOrderQty}
-                  max={Math.max(minOrderQty, stockQty)}
-                  value={qty}
-                  onChange={(e) =>
-                    setQty(
-                      Math.max(minOrderQty, Math.min(stockQty || minOrderQty, parseInt(e.target.value, 10) || minOrderQty)),
-                    )
-                  }
-                  className="ml-2 w-16 rounded border border-gray-300 px-2 py-1 text-center"
-                  disabled={isOutOfStock}
-                />
-              </label>
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Qty</span>
+                <div className="relative flex items-center gap-1">
+                  {qtyTooltip && (
+                    <div
+                      role="tooltip"
+                      className="pointer-events-none absolute bottom-full left-1/2 z-[60] mb-1.5 w-max max-w-[220px] -translate-x-1/2 rounded-md bg-gray-900 px-2.5 py-1.5 text-center text-xs font-medium text-white shadow-lg"
+                    >
+                      {qtyTooltip}
+                      <span
+                        className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900"
+                        aria-hidden
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isOutOfStock) return;
+                      if (atQtyMin) {
+                        showQtyTooltip(minTooltipText);
+                        return;
+                      }
+                      const next = qty - 1;
+                      setQty(next);
+                      setQtyStr(String(next));
+                    }}
+                    className={`rounded p-1 text-gray-600 hover:bg-gray-200 ${
+                      isOutOfStock || atQtyMin ? "cursor-not-allowed opacity-45 hover:bg-transparent" : ""
+                    }`}
+                    aria-label="Decrease quantity"
+                    aria-disabled={isOutOfStock || atQtyMin}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={minOrderQty}
+                    max={maxQty}
+                    value={qtyStr}
+                    onChange={(e) => {
+                      if (isOutOfStock) return;
+                      const next = e.target.value;
+                      setQtyStr(next);
+                      if (next === "") return;
+                      const n = parseInt(next, 10);
+                      if (Number.isNaN(n)) return;
+                      if (n < minOrderQty) {
+                        showQtyTooltip(minTooltipText);
+                        return;
+                      }
+                      if (n > maxQty) {
+                        showQtyTooltip(maxTooltipText);
+                        setQty(maxQty);
+                        setQtyStr(String(maxQty));
+                        return;
+                      }
+                      setQty(n);
+                    }}
+                    onBlur={() => !isOutOfStock && commitQtyInput(qtyStr)}
+                    className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    disabled={isOutOfStock}
+                    aria-label="Quantity"
+                    aria-invalid={qtyTooltip != null}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isOutOfStock) return;
+                      if (atQtyMax) {
+                        showQtyTooltip(maxTooltipText);
+                        return;
+                      }
+                      const next = qty + 1;
+                      setQty(next);
+                      setQtyStr(String(next));
+                    }}
+                    className={`rounded p-1 text-gray-600 hover:bg-gray-200 ${
+                      isOutOfStock || atQtyMax ? "cursor-not-allowed opacity-45 hover:bg-transparent" : ""
+                    }`}
+                    aria-label="Increase quantity"
+                    aria-disabled={isOutOfStock || atQtyMax}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => !isOutOfStock && addToCart(product, qty)}

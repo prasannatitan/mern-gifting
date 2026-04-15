@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext.tsx";
 import { API_BASE, type LoginResponse } from "@/lib/api.ts";
 import type { User } from "@/contexts/AuthContext.tsx";
@@ -81,6 +81,11 @@ export function Login() {
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm text-[#832729] hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </form>
       </div>
     </div>

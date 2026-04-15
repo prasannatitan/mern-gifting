@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest, type ApiOrder } from "@/lib/api";
+import { OrderBillingDetails } from "@/components/orders/OrderBillingDetails";
 
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -97,50 +98,57 @@ const AdminOrdersPage = () => {
               </tr>
             ) : (
               orders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
-                >
-                  <td className="px-5 py-4 text-sm font-mono font-semibold text-foreground">
-                    #{order.id.slice(0, 8)}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {order.store?.name ?? "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {order.vendor?.name ?? "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">
-                    {new Date(order.placedAt).toLocaleString()}
-                  </td>
-                  <td className="px-5 py-4 text-sm font-mono font-medium text-foreground">
-                    ₹{Number(order.totalAmount).toFixed(2)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusBadge label={order.status} variant="info" />
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(order.id)}
-                        disabled={actionId === order.id}
-                        className="bg-success text-success-foreground hover:bg-success/90 gap-1 text-xs h-8"
-                      >
-                        <Check className="w-3.5 h-3.5" /> Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleReject(order.id)}
-                        disabled={actionId === order.id}
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1 text-xs h-8"
-                      >
-                        <X className="w-3.5 h-3.5" /> Reject
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={order.id}>
+                  <tr className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
+                    <td className="px-5 py-4 text-sm font-mono font-semibold text-foreground">
+                      #{order.id.slice(0, 8)}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {order.store?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {order.vendor?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {new Date(order.placedAt).toLocaleString()}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-mono font-medium text-foreground">
+                      ₹{Number(order.totalAmount).toFixed(2)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge label={order.status} variant="info" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(order.id)}
+                          disabled={actionId === order.id}
+                          className="bg-success text-success-foreground hover:bg-success/90 gap-1 text-xs h-8"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReject(order.id)}
+                          disabled={actionId === order.id}
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1 text-xs h-8"
+                        >
+                          <X className="w-3.5 h-3.5" /> Reject
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/30 last:border-0">
+                    <td colSpan={7} className="px-5 py-3">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Store checkout details
+                      </p>
+                      <OrderBillingDetails order={order} />
+                    </td>
+                  </tr>
+                </Fragment>
               ))
             )}
           </tbody>

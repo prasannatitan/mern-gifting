@@ -86,6 +86,13 @@ export interface ApiOrder {
   currency: string;
   placedAt: string;
   paymentVerifiedAt: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  shippingAddress?: string | null;
+  shippingState?: string | null;
+  shippingCity?: string | null;
+  shippingPincode?: string | null;
+  gstNumber?: string | null;
   vendor?: { id: string; name: string };
   shipment?: {
     id: string;

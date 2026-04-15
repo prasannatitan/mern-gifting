@@ -1,4 +1,5 @@
 import {
+  ProductStatus,
   OrderStatus,
   PaymentStatus,
   Prisma,
@@ -16,7 +17,9 @@ import {
 import {
   notifyCeeOrderPending,
   notifyStoreEstimateSent,
+  notifyStoreVendorRejectedOrder,
   notifyStoreVendorAcceptedOrder,
+  notifyVendorRejectedBackToCee,
 } from "../emails/notifications";
 
 const prisma = client;
@@ -33,6 +36,13 @@ registerRoute(
       vendorId?: string;
       items?: { productId: string; quantity: number; unitPrice: number }[];
       currency?: string;
+      contactName?: string;
+      contactPhone?: string;
+      shippingAddress?: string;
+      shippingState?: string;
+      shippingCity?: string;
+      shippingPincode?: string;
+      gstNumber?: string | null;
     };
 
     if (
@@ -62,6 +72,111 @@ registerRoute(
       );
     }
 
+    const contactName = (body.contactName ?? "").trim();
+    const contactPhone = (body.contactPhone ?? "").trim();
+    const shippingAddress = (body.shippingAddress ?? "").trim();
+    const shippingState = (body.shippingState ?? "").trim();
+    const shippingCity = (body.shippingCity ?? "").trim();
+    const shippingPincode = (body.shippingPincode ?? "").trim().replace(/\D/g, "");
+    const gstRaw = body.gstNumber;
+    const gstNumber =
+      gstRaw == null || String(gstRaw).trim() === ""
+        ? null
+        : String(gstRaw).trim().toUpperCase();
+
+    if (!contactName || !contactPhone || !shippingAddress || !shippingState || !shippingCity) {
+      return badRequest(
+        "contactName, contactPhone, shippingAddress, shippingState, and shippingCity are required",
+      );
+    }
+    if (!/^\d{6}$/.test(shippingPincode)) {
+      return badRequest("shippingPincode must be a valid 6-digit Indian PIN code");
+    }
+    if (!/^\d{10}$/.test(contactPhone.replace(/\D/g, ""))) {
+      return badRequest("contactPhone must be a valid 10-digit mobile number");
+    }
+    if (
+      contactName.length > 200 ||
+      contactPhone.length > 30 ||
+      shippingAddress.length > 400 ||
+      shippingState.length > 120 ||
+      shippingCity.length > 120
+    ) {
+      return badRequest("contact or location fields are too long");
+    }
+    if (gstNumber != null && gstNumber.length > 20) {
+      return badRequest("gstNumber is too long");
+    }
+
+    for (const item of body.items) {
+      if (
+        !item ||
+        !item.productId ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        typeof item.unitPrice !== "number" ||
+        Number.isNaN(item.unitPrice) ||
+        item.unitPrice < 0
+      ) {
+        return badRequest(
+          "Each order item must include productId, quantity (integer >= 1), and unitPrice (number >= 0)",
+        );
+      }
+    }
+
+    const qtyByProductId = body.items.reduce<Record<string, number>>((acc, item) => {
+      acc[item.productId] = (acc[item.productId] ?? 0) + item.quantity;
+      return acc;
+    }, {});
+
+    const productIds = Object.keys(qtyByProductId);
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        vendorId: true,
+        status: true,
+        stockQuantity: true,
+        minOrderQuantity: true,
+        maxOrderQuantity: true,
+      },
+    });
+    if (products.length !== productIds.length) {
+      return badRequest("One or more products are missing or invalid");
+    }
+
+    for (const product of products) {
+      if (product.vendorId !== body.vendorId) {
+        return badRequest(`Product "${product.name}" does not belong to selected vendor`);
+      }
+      if (product.status !== ProductStatus.APPROVED) {
+        return badRequest(`Product "${product.name}" is not available for ordering`);
+      }
+
+      const requestedQty = qtyByProductId[product.id] ?? 0;
+      if (requestedQty > product.stockQuantity) {
+        return badRequest(
+          `Requested quantity for "${product.name}" exceeds available stock (${product.stockQuantity})`,
+        );
+      }
+      if (requestedQty < product.minOrderQuantity) {
+        return badRequest(
+          `Minimum order quantity for "${product.name}" is ${product.minOrderQuantity}`,
+        );
+      }
+      if (
+        product.maxOrderQuantity != null &&
+        requestedQty > product.maxOrderQuantity
+      ) {
+        return badRequest(
+          `Maximum order quantity for "${product.name}" is ${product.maxOrderQuantity}`,
+        );
+      }
+    }
+
     const totalAmount = body.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity,
       0,
@@ -76,6 +191,13 @@ registerRoute(
         paymentStatus: PaymentStatus.UNPAID,
         totalAmount,
         currency: body.currency ?? "INR",
+        contactName,
+        contactPhone: contactPhone.replace(/\D/g, ""),
+        shippingAddress,
+        shippingState,
+        shippingCity,
+        shippingPincode,
+        gstNumber,
         items: {
           create: body.items.map((i) => ({
             productId: i.productId,
@@ -176,10 +298,30 @@ registerRoute(
     if (!body.orderId || typeof body.accept !== "boolean") {
       return badRequest("orderId and accept are required");
     }
+    const remarks = (body.remarks ?? "").trim();
+    if (!body.accept && !remarks) {
+      return badRequest("remarks is required when rejecting an order");
+    }
+
+    const vendor = await prisma.vendor.findFirst({
+      where: { users: { some: { id: user.id } } },
+      select: { id: true, name: true },
+    });
+    if (!vendor) return badRequest("Vendor not found for user");
+
+    const existing = await prisma.order.findUnique({
+      where: { id: body.orderId },
+      include: { store: true, vendor: true },
+    });
+    if (!existing) return badRequest("Order not found");
+    if (existing.vendorId !== vendor.id) return forbidden();
+    if (existing.status !== OrderStatus.PENDING_VENDOR_ACCEPTANCE) {
+      return badRequest("Only pending vendor acceptance orders can be decided");
+    }
 
     const status = body.accept
       ? OrderStatus.ESTIMATE_SENT // will be updated when estimate is actually created
-      : OrderStatus.REJECTED_BY_VENDOR;
+      : OrderStatus.PENDING_CEE_APPROVAL;
 
     const order = await prisma.order.update({
       where: { id: body.orderId },
@@ -188,8 +330,8 @@ registerRoute(
         approvals: {
           create: {
             approvedById: user.id,
-            status,
-            remarks: body.remarks ?? null,
+            status: body.accept ? OrderStatus.ESTIMATE_SENT : OrderStatus.REJECTED_BY_VENDOR,
+            remarks: remarks || null,
           },
         },
       },
@@ -210,6 +352,41 @@ registerRoute(
           toEmail,
           storeName: order.store.name,
           vendorName: order.vendor.name,
+        });
+      }
+    } else {
+      const cee = order.assignedCeeId
+        ? await prisma.user.findUnique({
+            where: { id: order.assignedCeeId },
+            select: { email: true, name: true },
+          })
+        : null;
+
+      if (cee?.email) {
+        notifyVendorRejectedBackToCee({
+          orderId: order.id,
+          ceeEmail: cee.email,
+          ceeName: cee.name,
+          storeName: order.store.name,
+          vendorName: order.vendor.name,
+          reason: remarks,
+        });
+      }
+
+      const owner = order.store.ownerId
+        ? await prisma.user.findUnique({
+            where: { id: order.store.ownerId },
+            select: { email: true },
+          })
+        : null;
+      const toEmail = order.store.email?.trim() || owner?.email;
+      if (toEmail) {
+        notifyStoreVendorRejectedOrder({
+          orderId: order.id,
+          toEmail,
+          storeName: order.store.name,
+          vendorName: order.vendor.name,
+          reason: remarks,
         });
       }
     }
@@ -341,6 +518,24 @@ registerRoute(
 );
 
 // Admin/vendor/store-specific queues
+registerRoute(
+  "GET",
+  "/cee/orders",
+  requireRole(async ({ user }) => {
+    if (!user) return unauthorized();
+
+    const where: Prisma.OrderWhereInput =
+      user.role === UserRole.CEE ? { assignedCeeId: user.id } : {};
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: { store: true, vendor: true, approvals: true, estimate: true, shipment: true },
+      orderBy: { placedAt: "desc" },
+    });
+    return json(orders as any);
+  }, [UserRole.CEE, UserRole.CORPORATE_ADMIN]),
+);
+
 registerRoute(
   "GET",
   "/admin/orders/pending-cee",

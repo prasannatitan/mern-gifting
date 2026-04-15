@@ -2,22 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { useAuth } from "@/contexts/AuthContext.tsx";
-import { apiRequest } from "@/lib/api.ts";
+import { apiRequest, publicImageUrl } from "@/lib/api.ts";
 import type { ApiStore } from "@/lib/api.ts";
 
 export function Checkout() {
   const { user } = useAuth();
-  const { items, totalAmount, clear } = useCart();
+  const { items, totalAmount, clear, removeItem } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    contactName: user?.name ?? "",
-    contactEmail: user?.email ?? "",
-    contactPhone: "",
-    deliveryAddress: "",
-    notes: "",
-    poReference: "",
+    name: user?.name ?? "",
+    phone: "",
+    address: "",
+    state: "",
+    city: "",
+    pincode: "",
+    gst: "",
   });
 
   if (items.length === 0 && !loading) {
@@ -54,9 +55,30 @@ export function Checkout() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pincode = form.pincode.trim();
+    const phone = form.phone.replace(/\D/g, "");
+    if (
+      !form.name.trim() ||
+      !phone ||
+      !form.address.trim() ||
+      !form.state.trim() ||
+      !form.city.trim() ||
+      !pincode ||
+      !/^\d{10}$/.test(phone) ||
+      !/^\d{6}$/.test(pincode)
+    ) {
+      setError("Name, phone, address, state, city, and valid PIN are required.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
+      for (const item of items) {
+        if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100000) {
+          throw new Error(`Invalid quantity for "${item.name}". Please adjust your cart.`);
+        }
+      }
       const store = await apiRequest<ApiStore>("/stores/me");
       await apiRequest("/stores/orders", {
         method: "POST",
@@ -69,6 +91,13 @@ export function Checkout() {
             unitPrice: i.price,
           })),
           currency: "INR",
+          contactName: form.name.trim(),
+          contactPhone: phone,
+          shippingAddress: form.address.trim(),
+          shippingState: form.state.trim(),
+          shippingCity: form.city.trim(),
+          shippingPincode: pincode,
+          gstNumber: form.gst.trim() || null,
         }),
       });
       clear();
@@ -92,32 +121,80 @@ export function Checkout() {
 
         <form onSubmit={handlePlaceOrder} className="mt-6 grid gap-8 lg:grid-cols-2">
           <div className="space-y-4">
-            <h2 className="font-semibold text-gray-900">Contact & delivery</h2>
-           
+            <h2 className="font-semibold text-gray-900">Store details</h2>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">Phone</label>
-              <input
-                type="tel"
-                value={form.contactPhone}
-                onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Delivery address / notes</label>
-              <textarea
-                value={form.deliveryAddress}
-                onChange={(e) => setForm((f) => ({ ...f, deliveryAddress: e.target.value }))}
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">PO / Invoice reference (optional)</label>
+              <label className="block text-sm font-medium text-gray-700">Name *</label>
               <input
                 type="text"
-                value={form.poReference}
-                onChange={(e) => setForm((f) => ({ ...f, poReference: e.target.value }))}
+                required
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Phone Number *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                pattern="[0-9]{10}"
+                maxLength={10}
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Address *</label>
+              <textarea
+                required
+                rows={3}
+                value={form.address}
+                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">State *</label>
+              <input
+                type="text"
+                required
+                value={form.state}
+                onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">City *</label>
+              <input
+                type="text"
+                required
+                value={form.city}
+                onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Pincode *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={form.pincode}
+                onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">GST (optional)</label>
+              <input
+                type="text"
+                value={form.gst}
+                onChange={(e) => setForm((f) => ({ ...f, gst: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
@@ -128,9 +205,34 @@ export function Checkout() {
               <h2 className="font-semibold text-gray-900">Order summary</h2>
               <ul className="mt-3 space-y-2">
                 {items.map((i) => (
-                  <li key={i.productId} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{i.name} × {i.quantity}</span>
-                    <span>₹{(i.price * i.quantity).toFixed(2)}</span>
+                  <li key={i.productId} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-2 text-sm">
+                    <div className="flex min-w-0 items-center gap-2">
+                      {i.imageUrl ? (
+                        <img
+                          src={publicImageUrl(i.imageUrl)}
+                          alt=""
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-200 text-base">
+                          💎
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-gray-700">{i.name}</p>
+                        <p className="text-xs text-gray-500">Qty: {i.quantity}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p>₹{(i.price * i.quantity).toFixed(2)}</p>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(i.productId)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

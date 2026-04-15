@@ -11,7 +11,9 @@
     "prisma:generate": "bunx prisma generate",
     "prisma:migrate": "bunx prisma migrate dev",
     "prisma:migrate:deploy": "bunx prisma migrate deploy",
-    "db:seed": "bunx prisma db seed"
+    "db:seed": "bunx prisma db seed",
+    "import:tanishq": "bun prisma/import-tanishq-csv.ts",
+    "sync:store-owners": "bun prisma/sync-store-owners.ts"
   },
   "engines": {
     "bun": ">=1.0.0"

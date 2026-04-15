@@ -164,7 +164,7 @@ export function Profile() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-mono text-sm text-gray-500">
-                      Order #{order.id.slice(-8).toUpperCase()}
+                      Order #{order.id.slice(0, 8)}
                     </p>
                     <p className="text-sm text-gray-600">
                       {new Date(order.placedAt).toLocaleDateString(undefined, {
@@ -186,6 +186,29 @@ export function Profile() {
                     </span>
                   </div>
                 </div>
+                {(order.contactName?.trim() ||
+                  order.shippingCity?.trim() ||
+                  order.shippingState?.trim() ||
+                  order.shippingPincode?.trim() ||
+                  order.gstNumber?.trim()) && (
+                  <div className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                    <p className="font-medium text-gray-800">Checkout details</p>
+                    {order.contactName?.trim() && (
+                      <p className="mt-1">Contact: {order.contactName.trim()}</p>
+                    )}
+                    {(() => {
+                      const city = order.shippingCity?.trim();
+                      const st = order.shippingState?.trim();
+                      const pin = order.shippingPincode?.trim();
+                      const loc = [city, st].filter(Boolean).join(", ");
+                      const locLine = loc && pin ? `${loc} — ${pin}` : loc || pin;
+                      return locLine ? <p className="mt-0.5">Location: {locLine}</p> : null;
+                    })()}
+                    {order.gstNumber?.trim() && (
+                      <p className="mt-0.5">GST: {order.gstNumber.trim()}</p>
+                    )}
+                  </div>
+                )}
                 {order.shipment?.trackingNumber && order.status === "SHIPPED" && (
                   <p className="mt-2 text-xs text-gray-500">
                     Tracking: {order.shipment.trackingNumber}

@@ -1,6 +1,14 @@
 import { UserRole } from "@prisma/client";
-import { badRequest, json, registerRoute } from "../../core/router";
-import { loginUser, loginUserForStore, registerUser, registerUserForStore } from "./service";
+import { badRequest, json, registerRoute, requireRole } from "../../core/router";
+import {
+  loginUser,
+  loginUserForStore,
+  registerUser,
+  registerUserForStore,
+  requestForgotPasswordOtp,
+  resetPasswordWithOtp,
+  syncStoreOwnersFromStores,
+} from "./service";
 
 registerRoute("POST", "/auth/register", async ({ req }) => {
   try {
@@ -54,6 +62,44 @@ registerRoute("POST", "/auth/register/store", async ({ req }) => {
     return badRequest("Invalid registration data or user already exists");
   }
 });
+
+registerRoute("POST", "/auth/forgot-password/request-otp", async ({ req }) => {
+  try {
+    const body = await req.json();
+    const result = await requestForgotPasswordOtp(body);
+    return json(result);
+  } catch (err) {
+    console.error(err);
+    return badRequest("Invalid request");
+  }
+});
+
+registerRoute("POST", "/auth/forgot-password/reset", async ({ req }) => {
+  try {
+    const body = await req.json();
+    const result = await resetPasswordWithOtp(body);
+    return json(result);
+  } catch (err: unknown) {
+    console.error(err);
+    if (err instanceof Error) return badRequest(err.message);
+    return badRequest("Invalid request");
+  }
+});
+
+registerRoute(
+  "POST",
+  "/auth/sync-store-owners",
+  requireRole(async ({ req }) => {
+    try {
+      const body = (await req.json().catch(() => ({}))) as { defaultPassword?: string };
+      const result = await syncStoreOwnersFromStores({ defaultPassword: body.defaultPassword });
+      return json(result);
+    } catch (err) {
+      console.error(err);
+      return badRequest("Failed to sync store owners");
+    }
+  }, [UserRole.CORPORATE_ADMIN]),
+);
 
 // Simple endpoint to create initial admin/CEE/vendor/store-owner manually if needed
 registerRoute("POST", "/auth/bootstrap-admin", async ({ req }) => {

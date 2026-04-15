@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import NewProduct from "./pages/NewProduct";
@@ -53,6 +54,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginOrRedirect />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Vendor */}
             <Route
