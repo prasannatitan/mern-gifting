@@ -101,12 +101,47 @@ export function notifyStoreVendorAcceptedOrder(input: {
   toEmail: string;
   storeName: string;
   vendorName: string;
+  currency: string;
+  totalAmount: string;
+  placedAtLabel: string;
+  lines: { productName: string; quantity: number; unitPrice: string; lineTotal: string }[];
 }): void {
   fire((async () => {
+    const rows = input.lines
+      .map(
+        (line) => `
+<tr>
+  <td style="padding:8px 4px;border-bottom:1px solid #eee;">${escapeHtml(line.productName)}</td>
+  <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;">${line.quantity}</td>
+  <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;">${escapeHtml(input.currency)} ${escapeHtml(line.unitPrice)}</td>
+  <td style="padding:8px 4px;border-bottom:1px solid #eee;text-align:right;">${escapeHtml(input.currency)} ${escapeHtml(line.lineTotal)}</td>
+</tr>`,
+      )
+      .join("");
+
+    const invoiceBlock = `
+<h2 style="font-size:16px;margin:24px 0 8px;">Provisional invoice</h2>
+<p style="font-size:14px;color:#444;margin:0 0 12px;">Placed: ${escapeHtml(input.placedAtLabel)}</p>
+<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:8px;">
+<thead>
+<tr style="border-bottom:2px solid #ccc;">
+  <th align="left" style="padding:8px 4px;text-align:left;">Item</th>
+  <th align="right" style="padding:8px 4px;text-align:right;">Qty</th>
+  <th align="right" style="padding:8px 4px;text-align:right;">Unit price</th>
+  <th align="right" style="padding:8px 4px;text-align:right;">Line total</th>
+</tr>
+</thead>
+<tbody>${rows}</tbody>
+</table>
+<p style="font-size:15px;font-weight:600;margin:12px 0 4px;">Order total: ${escapeHtml(input.currency)} ${escapeHtml(input.totalAmount)}</p>
+<p style="font-size:13px;color:#555;margin:0 0 16px;"><strong>GST</strong> will be calculated and added during final billing.</p>`;
+
     const inner = `
 <h1 style="font-size:20px;">Vendor accepted your order</h1>
 <p>Order <strong>${escapeHtml(input.orderId)}</strong> — ${escapeHtml(input.storeName)}</p>
-<p>${escapeHtml(input.vendorName)} has accepted this order. You will receive a detailed cost estimate by email once it is prepared.</p>`;
+<p>${escapeHtml(input.vendorName)} has accepted this order. A detailed cost estimate will follow by email when it is prepared.</p>
+${invoiceBlock}
+<p style="font-size:14px;">Payment is handled offline with the vendor. Complete payment as agreed; the vendor will confirm when received.</p>`;
 
     const html = wrapEmail(inner, "Order accepted");
     const subject = `Order accepted by vendor — ${input.orderId}`;

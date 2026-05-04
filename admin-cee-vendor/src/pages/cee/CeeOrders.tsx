@@ -11,6 +11,7 @@ export default function CeeOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"PENDING" | "REJECTED">("PENDING");
 
   const load = async () => {
     setLoading(true);
@@ -59,11 +60,41 @@ export default function CeeOrdersPage() {
     }
   };
 
+  const visibleOrders = orders.filter((order) => {
+    if (statusFilter === "PENDING") return order.status === "PENDING_CEE_APPROVAL";
+    return order.status === "REJECTED_BY_CEE" || order.status === "REJECTED_BY_VENDOR";
+  });
+
   return (
     <CeeLayout title="Order log" subtitle="View all territory orders and act on pending approvals">
       {error && (
         <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
       )}
+
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("PENDING")}
+          className={`rounded-full px-3 py-1.5 text-sm transition ${
+            statusFilter === "PENDING"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          }`}
+        >
+          Pending Approval
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter("REJECTED")}
+          className={`rounded-full px-3 py-1.5 text-sm transition ${
+            statusFilter === "REJECTED"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          }`}
+        >
+          Rejected
+        </button>
+      </div>
 
       <div className="animate-fade-in overflow-hidden rounded-xl bg-card shadow-card">
         <table className="w-full">
@@ -85,14 +116,16 @@ export default function CeeOrdersPage() {
                   Loading…
                 </td>
               </tr>
-            ) : orders.length === 0 ? (
+            ) : visibleOrders.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
-                  No orders found in your territory.
+                  {statusFilter === "PENDING"
+                    ? "No pending approvals in your territory."
+                    : "No rejected orders in your territory."}
                 </td>
               </tr>
             ) : (
-              orders.map((order) => (
+              visibleOrders.map((order) => (
                 <Fragment key={order.id}>
                   <tr className="border-b border-border transition-colors last:border-0 hover:bg-secondary/50">
                     <td className="px-5 py-4 font-mono text-sm font-semibold text-foreground">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CeeLayout } from "@/components/cee/CeeLayout";
 import { apiRequest } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
 
 type CeeStoreRow = {
   id: string;
@@ -14,6 +15,7 @@ type CeeStoreRow = {
 };
 
 export default function CeeStoresPage() {
+  const navigate = useNavigate();
   const [stores, setStores] = useState<CeeStoreRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,11 @@ export default function CeeStoresPage() {
               </tr>
             ) : (
               stores.map((s) => (
-                <tr key={s.id} className="border-b border-border last:border-0">
+                <tr
+                  key={s.id}
+                  onClick={() => navigate(`/cee/stores/${s.id}`)}
+                  className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-muted/40"
+                >
                   <td className="px-5 py-3 font-mono text-sm">{s.code}</td>
                   <td className="px-5 py-3 text-sm font-medium">{s.name}</td>
                   <td className="px-5 py-3 text-sm text-muted-foreground">

@@ -167,7 +167,9 @@ const ProductsPage = () => {
                         </Link>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{product.sku ?? "—"}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {product.category?.replaceAll("_", " ") ?? "—"}
+                    </td>
                     <td className="px-5 py-4 text-sm font-mono font-medium text-foreground">
                       ₹{Number(product.basePrice).toFixed(2)}
                     </td>

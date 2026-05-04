@@ -12,6 +12,27 @@ import {
 import { notifyAdminsNewProductQueued } from "../emails/notifications";
 
 const prisma = client;
+type ProductCategoryValue =
+  | "FESTIVAL_GIFTS"
+  | "ANNIVERSARY_GIFTS"
+  | "PERSONALISED_GIFTS"
+  | "BIRTHDAY_GIFTS";
+
+const FIXED_PRODUCT_CATEGORIES: ProductCategoryValue[] = [
+  "FESTIVAL_GIFTS",
+  "ANNIVERSARY_GIFTS",
+  "PERSONALISED_GIFTS",
+  "BIRTHDAY_GIFTS",
+];
+
+function parseCategory(raw: unknown): ProductCategoryValue | null {
+  if (typeof raw !== "string") return null;
+  const normalized = raw.trim().toUpperCase();
+  if (FIXED_PRODUCT_CATEGORIES.includes(normalized as ProductCategoryValue)) {
+    return normalized as ProductCategoryValue;
+  }
+  return null;
+}
 
 function getExt(name: string, type: string): string {
   const n = (name || "").toLowerCase();
@@ -38,6 +59,7 @@ registerRoute(
 
     const contentType = req.headers.get("content-type") ?? "";
     let name: string | undefined;
+    let category: ProductCategoryValue | null = null;
     let description: string | null = null;
     let basePrice: number | undefined;
     let discountPrice: number | null = null;
@@ -51,6 +73,7 @@ registerRoute(
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       name = (formData.get("name") as string)?.trim();
+      category = parseCategory(formData.get("category"));
       const desc = formData.get("description");
       description = desc != null ? String(desc).trim() || null : null;
       const priceVal = formData.get("basePrice");
@@ -76,6 +99,7 @@ registerRoute(
     } else {
       const body = (await req.json().catch(() => ({}))) as {
         name?: string;
+        category?: string;
         description?: string;
         basePrice?: number;
         discountPrice?: number | null;
@@ -86,6 +110,7 @@ registerRoute(
         sku?: string;
       };
       name = body.name;
+      category = parseCategory(body.category);
       description = body.description ?? null;
       basePrice = body.basePrice;
       discountPrice = body.discountPrice ?? null;
@@ -96,8 +121,8 @@ registerRoute(
       sku = body.sku ?? null;
     }
 
-    if (!name || typeof basePrice !== "number" || basePrice < 0) {
-      return badRequest("name and basePrice are required");
+    if (!name || !category || typeof basePrice !== "number" || basePrice < 0) {
+      return badRequest("name, category and basePrice are required");
     }
     if (discountPrice != null && (Number.isNaN(discountPrice) || discountPrice < 0 || discountPrice >= basePrice)) {
       return badRequest("discountPrice must be >= 0 and less than basePrice");
@@ -126,6 +151,7 @@ registerRoute(
       data: {
         vendorId: vendor.id,
         name,
+        category,
         description,
         basePrice,
         discountPrice,
@@ -214,13 +240,128 @@ registerRoute(
 );
 
 // List approved products for store owners (catalog)
-registerRoute("GET", "/products", async () => {
+registerRoute("GET", "/products", async ({ req }) => {
+  const parsedUrl = new URL(req.url);
+  const categoryParam = parsedUrl.searchParams.get("category");
+  const category = categoryParam ? parseCategory(categoryParam) : null;
+  if (categoryParam && !category) {
+    return badRequest("Invalid category filter");
+  }
   const products = await prisma.product.findMany({
-    where: { status: ProductStatus.APPROVED },
+    where: { status: ProductStatus.APPROVED, ...(category ? { category } : {}) },
     orderBy: { createdAt: "desc" },
     include: { vendor: { select: { id: true, name: true } } },
   });
   return json(products);
+});
+
+// Paginated product listing for storefront collections
+registerRoute("GET", "/products/paginated", async ({ req }) => {
+  const parsedUrl = new URL(req.url);
+  const categoryParam = parsedUrl.searchParams.get("category");
+  const category = categoryParam ? parseCategory(categoryParam) : null;
+  if (categoryParam && !category) {
+    return badRequest("Invalid category filter");
+  }
+
+  const rawPage = Number(parsedUrl.searchParams.get("page") ?? "1");
+  const rawLimit = Number(parsedUrl.searchParams.get("limit") ?? "12");
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(60, Math.floor(rawLimit)) : 12;
+
+  const search = (parsedUrl.searchParams.get("search") ?? "").trim();
+  const minPriceRaw = parsedUrl.searchParams.get("minPrice");
+  const maxPriceRaw = parsedUrl.searchParams.get("maxPrice");
+  const minPrice = minPriceRaw != null && minPriceRaw !== "" ? Number(minPriceRaw) : null;
+  const maxPrice = maxPriceRaw != null && maxPriceRaw !== "" ? Number(maxPriceRaw) : null;
+  const inStock = parsedUrl.searchParams.get("inStock") === "true";
+  const outOfStock = parsedUrl.searchParams.get("outOfStock") === "true";
+  const sortBy = (parsedUrl.searchParams.get("sortBy") ?? "featured").trim();
+
+  if ((minPrice != null && !Number.isFinite(minPrice)) || (maxPrice != null && !Number.isFinite(maxPrice))) {
+    return badRequest("Invalid minPrice/maxPrice");
+  }
+
+  const baseWhere: Record<string, unknown> = {
+    status: ProductStatus.APPROVED,
+    ...(category ? { category } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+
+  const availabilityClause =
+    inStock && outOfStock
+      ? null
+      : inStock
+        ? { stockQuantity: { gt: 0 } }
+        : outOfStock
+          ? { stockQuantity: { lte: 0 } }
+          : null;
+
+  const where: Record<string, unknown> = {
+    ...baseWhere,
+    ...(availabilityClause ?? {}),
+    ...(minPrice != null || maxPrice != null
+      ? {
+          basePrice: {
+            ...(minPrice != null ? { gte: minPrice } : {}),
+            ...(maxPrice != null ? { lte: maxPrice } : {}),
+          },
+        }
+      : {}),
+  };
+
+  const orderBy =
+    sortBy === "price_asc"
+      ? ({ basePrice: "asc" } as const)
+      : sortBy === "price_desc"
+        ? ({ basePrice: "desc" } as const)
+        : sortBy === "name_asc"
+          ? ({ name: "asc" } as const)
+          : ({ createdAt: "desc" } as const);
+
+  const [total, items, bounds] = await Promise.all([
+    prisma.product.count({ where: where as any }),
+    prisma.product.findMany({
+      where: where as any,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { vendor: { select: { id: true, name: true } } },
+    }),
+    prisma.product.aggregate({
+      where: {
+        ...baseWhere,
+        ...(availabilityClause ?? {}),
+      } as any,
+      _min: { basePrice: true },
+      _max: { basePrice: true },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  return json({
+    items,
+    total,
+    page,
+    limit,
+    totalPages,
+    minPrice:
+      bounds._min.basePrice != null
+        ? Number(bounds._min.basePrice as unknown as number)
+        : 0,
+    maxPrice:
+      bounds._max.basePrice != null
+        ? Number(bounds._max.basePrice as unknown as number)
+        : 0,
+  } as any);
 });
 
 // Admin: list products pending corporate approval
@@ -309,6 +450,8 @@ registerRoute(
     const contentType = req.headers.get("content-type") ?? "";
     let productId: string | undefined;
     let name: string | undefined;
+    let category: ProductCategoryValue | undefined;
+    let invalidCategory = false;
     let description: string | null | undefined;
     let basePrice: number | undefined;
     let discountPrice: number | null | undefined;
@@ -324,6 +467,12 @@ registerRoute(
       const formData = await req.formData();
       productId = String(formData.get("id") ?? "").trim();
       name = (formData.get("name") as string)?.trim();
+      const rawCategory = formData.get("category");
+      if (rawCategory != null && String(rawCategory).trim() !== "") {
+        const parsedCategory = parseCategory(rawCategory);
+        if (!parsedCategory) invalidCategory = true;
+        category = parsedCategory ?? undefined;
+      }
       const desc = formData.get("description");
       description = desc != null ? String(desc).trim() || null : undefined;
       const priceVal = formData.get("basePrice");
@@ -352,6 +501,7 @@ registerRoute(
       const body = (await req.json().catch(() => ({}))) as {
         id?: string;
         name?: string;
+        category?: string;
         description?: string | null;
         basePrice?: number;
         discountPrice?: number | null;
@@ -363,6 +513,11 @@ registerRoute(
       };
       productId = body.id?.trim();
       name = body.name;
+      if (body.category != null && String(body.category).trim() !== "") {
+        const parsedCategory = parseCategory(body.category);
+        if (!parsedCategory) invalidCategory = true;
+        category = parsedCategory ?? undefined;
+      }
       description = body.description;
       basePrice = body.basePrice;
       discountPrice = body.discountPrice;
@@ -374,6 +529,9 @@ registerRoute(
     }
 
     if (!productId) return badRequest("id is required");
+    if (invalidCategory) {
+      return badRequest("Invalid category");
+    }
 
     const existing = await prisma.product.findFirst({
       where: { id: productId, vendorId: vendor.id },
@@ -436,6 +594,7 @@ registerRoute(
       where: { id: existing.id },
       data: {
         ...(name !== undefined ? { name: name.trim() } : {}),
+        ...(category !== undefined ? { category } : {}),
         ...(description !== undefined ? { description } : {}),
         ...(basePrice !== undefined ? { basePrice } : {}),
         ...(discountPrice !== undefined ? { discountPrice: discountPrice === null ? null : discountPrice } : {}),

@@ -208,15 +208,16 @@ const OrdersPage = () => {
                           </Button>
                         </div>
                       )}
-                      {order.status === "ESTIMATE_SENT" &&
+                      {(order.status === "ESTIMATE_SENT" || order.status === "PAYMENT_PENDING") &&
                         order.paymentStatus !== "VERIFIED" && (
                           <Button
                             size="sm"
                             className="bg-amber-600 text-white hover:bg-amber-700 h-8 text-xs"
                             disabled={actionId === order.id}
                             onClick={() => verifyPayment(order.id)}
+                            title="Use when offline payment has been received"
                           >
-                            Mark payment verified
+                            Mark payment complete
                           </Button>
                         )}
                     </td>

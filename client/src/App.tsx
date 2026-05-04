@@ -24,6 +24,7 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/collections" element={<Categories />} />
+          <Route path="/collections/:category" element={<Categories />} />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

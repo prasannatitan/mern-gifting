@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext.tsx";
 import { useCart } from "@/contexts/CartContext.tsx";
 import { NavLink} from 'react-router';
@@ -15,30 +15,58 @@ interface HeaderProps {
 export function Header({ onOpenCart }: HeaderProps) {
   const { user } = useAuth();
   const { totalItems } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchText, setSearchText] = useState("");
 
 
-const menu = [
-  {
-    label: 'NEW YEAR GIFTS',
-    href: '/',
-  },
-  {
-    label: 'AKSHAYA TRITYA GIFTS',
-    href: '/',
-  },
-  {
-    label: 'ALL GIFTS',
-    href: '/collections',
-  },
-  {
-    label: 'MAKE YOUR OWN HAMPER',
-    href: '/',
-  },
-  {
-    label: 'NEW ARRIVALS',
-    href: '/',
-  },
-]
+  useEffect(() => {
+    const isCollectionsPage = location.pathname.startsWith("/collections");
+    if (!isCollectionsPage) {
+      setSearchText("");
+      return;
+    }
+    const params = new URLSearchParams(location.search);
+    setSearchText(params.get("search") ?? "");
+  }, [location.pathname, location.search]);
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchText.trim();
+    if (location.pathname.startsWith("/collections")) {
+      const p = new URLSearchParams(location.search);
+      if (query) p.set("search", query);
+      else p.delete("search");
+      p.delete("page");
+      const qs = p.toString();
+      navigate(`${location.pathname}${qs ? `?${qs}` : ""}`, { replace: true });
+    } else {
+      navigate(query ? `/collections?search=${encodeURIComponent(query)}` : "/collections");
+    }
+  };
+
+  const menu = [
+    {
+      label: "FESTIVAL GIFTS",
+      href: "/collections/festival",
+    },
+    {
+      label: "ANNIVERSARY GIFTS",
+      href: "/collections/anniversary",
+    },
+    {
+      label: "PERSONALISED GIFTS",
+      href: "/collections/personalised",
+    },
+    {
+      label: "BIRTHDAY GIFTS",
+      href: "/collections/birthday",
+    },
+    {
+      label: "ALL GIFTS",
+      href: "/collections",
+    },
+  ];
   return (
     <>
     <header className="p-3 pb-2 top-0 sticky z-[2] bg-[#F3E5D8]">
@@ -47,14 +75,21 @@ const menu = [
         <img src={logo} alt="logo" className="w-[100px]" />
       </NavLink>
 
-      <div className="max-w-[316px] w-full rounded-[8px] bg-[rgba(255,255,255,0.51)] border-neutral-400 border flex items-center gap-2 p-2">
-       <img src={Search} alt="search icon" />
+      <form
+        onSubmit={handleSearchSubmit}
+        className="max-w-[316px] w-full rounded-[8px] bg-[rgba(255,255,255,0.51)] border-neutral-400 border flex items-center gap-2 p-2"
+      >
+       <button type="submit" className="flex items-center" aria-label="Search products">
+         <img src={Search} alt="search icon" />
+       </button>
         <input
           type="text"
           placeholder="Search for gifts"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
           className="[font-family:var(--primary-font)] border-none outline-none font-[400] text-[13.50px] text-[rgba(0,0,0,0.52)]"
         />
-      </div>
+      </form>
      
       <div className="flex items-center gap-3">
           <button

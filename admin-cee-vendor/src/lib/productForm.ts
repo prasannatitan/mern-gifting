@@ -1,9 +1,24 @@
 export const PRODUCT_META_SEP = "\n\nProduct Meta\n";
+export const PRODUCT_CATEGORIES = [
+  "FESTIVAL_GIFTS",
+  "ANNIVERSARY_GIFTS",
+  "PERSONALISED_GIFTS",
+  "BIRTHDAY_GIFTS",
+] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+export const PRODUCT_CATEGORY_LABEL: Record<ProductCategory, string> = {
+  FESTIVAL_GIFTS: "FESTIVAL GIFTS",
+  ANNIVERSARY_GIFTS: "ANNIVERSARY GIFTS",
+  PERSONALISED_GIFTS: "PERSONALISED GIFTS",
+  BIRTHDAY_GIFTS: "BIRTHDAY GIFTS",
+};
 
 export type ProductFormFields = {
   name: string;
   sku: string;
-  category: string;
+  category: ProductCategory;
   brand: string;
   material: string;
   minOrderQty: string;
@@ -42,7 +57,7 @@ export function parseProductDescription(full: string | null): { description: str
     if (!m) continue;
     const key = m[1].trim();
     const val = m[2].trim();
-    if (key === "Category") form.category = val;
+    if (key === "Category" && PRODUCT_CATEGORIES.includes(val as ProductCategory)) form.category = val as ProductCategory;
     else if (key === "Brand") form.brand = val;
     else if (key === "Material") form.material = val;
     else if (key === "Min Order Qty") form.minOrderQty = val;
@@ -57,7 +72,7 @@ export function emptyProductForm(): ProductFormFields {
   return {
     name: "",
     sku: "",
-    category: "",
+    category: "FESTIVAL_GIFTS",
     brand: "",
     material: "",
     minOrderQty: "1",

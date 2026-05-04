@@ -6,7 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/api";
-import { buildProductDescription, emptyProductForm, type ProductFormFields } from "@/lib/productForm";
+import {
+  buildProductDescription,
+  emptyProductForm,
+  PRODUCT_CATEGORIES,
+  PRODUCT_CATEGORY_LABEL,
+  type ProductFormFields,
+} from "@/lib/productForm";
 import { ArrowLeft, Upload } from "lucide-react";
 
 export default function NewProductPage() {
@@ -37,6 +43,7 @@ export default function NewProductPage() {
       const fullDescription = buildProductDescription(form);
       const fd = new FormData();
       fd.set("name", form.name.trim());
+      fd.set("category", form.category);
       fd.set("sku", form.sku.trim());
       fd.set("description", fullDescription);
       fd.set("basePrice", String(Number(form.basePrice)));
@@ -82,7 +89,18 @@ export default function NewProductPage() {
           </div>
           <div>
             <Label htmlFor="category">Category</Label>
-            <Input id="category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+            <select
+              id="category"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value as ProductFormFields["category"] })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {PRODUCT_CATEGORY_LABEL[category]}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="brand">Brand</Label>

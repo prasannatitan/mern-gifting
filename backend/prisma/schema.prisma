@@ -7,7 +7,10 @@
 generator client {
   provider = "prisma-client-js"
 }
-
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.svg"
+}
 datasource db {
   provider = "postgresql"
 }
@@ -25,6 +28,13 @@ enum ProductStatus {
   APPROVED
   REJECTED
   ARCHIVED
+}
+
+enum ProductCategory {
+  FESTIVAL_GIFTS
+  ANNIVERSARY_GIFTS
+  PERSONALISED_GIFTS
+  BIRTHDAY_GIFTS
 }
 
 enum OrderStatus {
@@ -144,6 +154,7 @@ model Product {
   vendorId    String
 
   name        String
+  category    ProductCategory @default(FESTIVAL_GIFTS)
   sku         String?
   description String?
   basePrice   Decimal         @db.Decimal(10, 2)

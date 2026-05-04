@@ -1,9 +1,7 @@
 import {
   Package,
   ShoppingCart,
-  FileText,
   Truck,
-  CreditCard,
   LayoutDashboard,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +13,7 @@ const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: Package },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Cost Letters", url: "/cost-letters", icon: FileText },
   { title: "Deliveries", url: "/deliveries", icon: Truck },
-  { title: "Payments", url: "/payments", icon: CreditCard },
 ];
 
 export const DashboardSidebar = () => {

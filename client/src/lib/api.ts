@@ -48,6 +48,7 @@ export interface LoginResponse {
 export interface ApiProduct {
   id: string;
   name: string;
+  category: string;
   description: string | null;
   basePrice: number;
   discountPrice?: number | null;

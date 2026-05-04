@@ -133,7 +133,7 @@ const DeliveriesPage = () => {
           </div>
         ) : withShipment.length === 0 ? (
           <div className="bg-card rounded-xl shadow-card p-8 text-center text-muted-foreground">
-            No deliveries yet. Verify payment on Orders, then add shipment here.
+            No deliveries yet. Mark payment complete on Orders after offline payment, then add shipment here.
           </div>
         ) : (
           withShipment.map((order) => {

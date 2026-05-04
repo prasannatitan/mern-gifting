@@ -14,7 +14,6 @@ import EditProduct from "./pages/EditProduct";
 import Orders from "./pages/Orders";
 import CostLetters from "./pages/CostLetters";
 import Deliveries from "./pages/Deliveries";
-import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -27,6 +26,7 @@ import AdminStores from "./pages/admin/AdminStores";
 import CeeOverview from "./pages/cee/CeeOverview";
 import CeeOrders from "./pages/cee/CeeOrders";
 import CeeStores from "./pages/cee/CeeStores";
+import CeeStoreDetails from "./pages/cee/CeeStoreDetails";
 
 const queryClient = new QueryClient();
 
@@ -113,14 +113,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/payments"
-              element={
-                <ProtectedRoute allowedRoles={["VENDOR"]}>
-                  <Payments />
-                </ProtectedRoute>
-              }
-            />
 
             {/* CEE — territory orders & stores */}
             <Route
@@ -144,6 +136,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["CEE"]}>
                   <CeeStores />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cee/stores/:storeId"
+              element={
+                <ProtectedRoute allowedRoles={["CEE"]}>
+                  <CeeStoreDetails />
                 </ProtectedRoute>
               }
             />

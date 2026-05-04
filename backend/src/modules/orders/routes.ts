@@ -339,6 +339,14 @@ registerRoute(
     });
 
     if (body.accept) {
+      const orderWithItems = await prisma.order.findUnique({
+        where: { id: body.orderId },
+        include: {
+          store: true,
+          vendor: true,
+          items: { include: { product: { select: { name: true } } } },
+        },
+      });
       const owner = order.store.ownerId
         ? await prisma.user.findUnique({
             where: { id: order.store.ownerId },
@@ -346,12 +354,22 @@ registerRoute(
           })
         : null;
       const toEmail = order.store.email?.trim() || owner?.email;
-      if (toEmail) {
+      if (toEmail && orderWithItems) {
+        const lines = orderWithItems.items.map((it) => ({
+          productName: it.product.name,
+          quantity: it.quantity,
+          unitPrice: Number(it.unitPrice).toFixed(2),
+          lineTotal: Number(it.totalPrice).toFixed(2),
+        }));
         notifyStoreVendorAcceptedOrder({
-          orderId: order.id,
+          orderId: orderWithItems.id,
           toEmail,
-          storeName: order.store.name,
-          vendorName: order.vendor.name,
+          storeName: orderWithItems.store.name,
+          vendorName: orderWithItems.vendor.name,
+          currency: orderWithItems.currency || "INR",
+          totalAmount: Number(orderWithItems.totalAmount).toFixed(2),
+          placedAtLabel: orderWithItems.placedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+          lines,
         });
       }
     } else {

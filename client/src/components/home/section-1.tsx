@@ -13,10 +13,10 @@ export default function Section1() {
               </span>
             </div>
             <div className="py-10 max-md:pb-2 flex items-center gap-4 max-md:gap-y-7  max-md:flex-wrap max-md:justify-center">
-              <a href="/" className="max-md:max-w-[38%]">
-                <img src="/assets/Door.png" />
-                <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] md:text-[17px] text-[14px] bg-[#F3E5D8] text-center">
-                  Birthday Gifts
+            <a href="/collections/festival" className="max-md:max-w-[38%]">
+                <img src="/assets/Door (4).png" />
+                <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] text-[17px] bg-[#F3E5D8] text-center">
+                  Festival Gifts
                 </p>
               </a>
               <img
@@ -24,7 +24,7 @@ export default function Section1() {
                 alt="tanishq icon"
                 className="h-7"
               />
-              <a href="/" className="max-md:max-w-[38%]">
+               <a href="/collections/anniversary" className="max-md:max-w-[38%]">
                 <img src="/assets/Door (1).png" />
                 <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] md:text-[17px] text-[14px] bg-[#F3E5D8] text-center">
                   Anniversary Gifts
@@ -35,12 +35,27 @@ export default function Section1() {
                 alt="tanishq icon"
                 className="h-7 max-md:hidden"
               />
-              <a href="/" className="max-md:max-w-[38%]">
+              <a href="/collections/personalised" className="max-md:max-w-[38%]">
                 <img src="/assets/Door (2).png" />
                 <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] md:text-[17px] text-[14px] bg-[#F3E5D8] text-center">
-                  Akshaya Tritya Gifts
+                Personalised Gifts
                 </p>
               </a>
+              <img
+                src="/assets/ta-icon.png"
+                alt="tanishq icon"
+                className="h-7 max-md:hidden"
+              />
+              <a href="/collections/birthday" className="max-md:max-w-[38%]">
+                <img src="/assets/Door.png" />
+                <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] md:text-[17px] text-[14px] bg-[#F3E5D8] text-center">
+                  Birthday Gifts
+                </p>
+              </a>
+             
+             
+             
+              
               <img
                 src="/assets/ta-icon.png"
                 alt="tanishq icon"
@@ -49,20 +64,11 @@ export default function Section1() {
               <a href="/" className="max-md:max-w-[38%]">
                 <img src="/assets/Door (3).png" />
                 <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] md:text-[17px] text-[14px] bg-[#F3E5D8] text-center">
-                   New Year Gifts
+                New Arrivals
                 </p>
               </a>
-              <img
-                src="/assets/ta-icon.png"
-                alt="tanishq icon"
-                className="h-7 max-md:hidden"
-              />
-              <a href="/" className="max-md:max-w-[38%]">
-                <img src="/assets/Door (4).png" />
-                <p className="font-[500] w-full py-[3px] border border-t-0 [font-family:var(--primary-font)] text-[17px] bg-[#F3E5D8] text-center">
-                  Festival Gifts
-                </p>
-              </a>
+             
+             
             </div>
           </div>
         </div>

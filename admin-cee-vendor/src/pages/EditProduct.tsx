@@ -10,6 +10,8 @@ import {
   buildProductDescription,
   emptyProductForm,
   parseProductDescription,
+  PRODUCT_CATEGORIES,
+  PRODUCT_CATEGORY_LABEL,
   type ProductFormFields,
 } from "@/lib/productForm";
 import { ArrowLeft, Upload } from "lucide-react";
@@ -40,6 +42,9 @@ export default function EditProductPage() {
           ...emptyProductForm(),
           ...meta,
           name: p.name,
+          category: PRODUCT_CATEGORIES.includes((p.category ?? "") as ProductFormFields["category"])
+            ? (p.category as ProductFormFields["category"])
+            : emptyProductForm().category,
           sku: p.sku ?? "",
           minOrderQty: String(p.minOrderQuantity ?? (Number(meta.minOrderQty ?? 1) || 1)),
           maxOrderQty:
@@ -85,6 +90,7 @@ export default function EditProductPage() {
       const fd = new FormData();
       fd.set("id", id);
       fd.set("name", form.name.trim());
+      fd.set("category", form.category);
       fd.set("sku", form.sku.trim());
       fd.set("description", fullDescription);
       fd.set("basePrice", String(Number(form.basePrice)));
@@ -142,7 +148,18 @@ export default function EditProductPage() {
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
-              <Input id="category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <select
+                id="category"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value as ProductFormFields["category"] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {PRODUCT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {PRODUCT_CATEGORY_LABEL[category]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <Label htmlFor="brand">Brand</Label>
